@@ -4,15 +4,27 @@ const BRIDGE_KEY=process.env.BRIDGE_KEY||"CAMBIA-QUESTA-CHIAVE";
 const DATA=process.env.DATA_DIR||path.join(__dirname,"data");
 const ORDERS=path.join(DATA,"orders.json");
 const PUB=path.join(__dirname,"public");
+const MENU=path.join(PUB,"menu.json");
 fs.mkdirSync(DATA,{recursive:true}); if(!fs.existsSync(ORDERS)) fs.writeFileSync(ORDERS,"[]");
 
 function readOrders(){try{return JSON.parse(fs.readFileSync(ORDERS,"utf8"))}catch{return[]}}
 function writeOrders(x){fs.writeFileSync(ORDERS,JSON.stringify(x,null,2))}
+function readMenu(){try{return JSON.parse(fs.readFileSync(MENU,"utf8"))}catch{return[]}}
 function send(res,status,obj,headers={}){const body=typeof obj==="string"?obj:JSON.stringify(obj);res.writeHead(status,{"Content-Type":typeof obj==="string"?"text/plain; charset=utf-8":"application/json; charset=utf-8",...headers});res.end(body)}
 function jsonBody(req){return new Promise((resolve,reject)=>{let b="";req.on("data",c=>{b+=c;if(b.length>1e6)req.destroy()});req.on("end",()=>{try{resolve(JSON.parse(b||"{}"))}catch(e){reject(e)}})})}
 function nextId(orders){const d=new Date(), ymd=d.toISOString().slice(0,10).replaceAll("-","");const today=orders.filter(o=>o.created_at?.startsWith(d.toISOString().slice(0,10))).length+1;return `${ymd}-${String(today).padStart(3,"0")}`}
 function isBridge(req){return req.headers["x-api-key"]===BRIDGE_KEY}
 function validPickup(s){return /^([01]\d|2[0-3]):[0-5]\d$/.test(s||"")}
+function officialItems(items){
+ const menu=readMenu();
+ return items.map(x=>{
+   const qty=Math.max(1,Math.min(20,Math.floor(Number(x.qty)||1)));
+   const name=String(x.name||"").trim();
+   const product=menu.find(m=>m.name===name);
+   if(!product) throw Error(`Prodotto non valido: ${name||"senza nome"}`);
+   return {qty,name:product.name,ingredients:product.ingredients,changes:String(x.changes||"").slice(0,200),price:Number(product.price)};
+ });
+}
 
 const server=http.createServer(async(req,res)=>{
  const u=new URL(req.url,`http://${req.headers.host}`);
@@ -20,11 +32,12 @@ const server=http.createServer(async(req,res)=>{
    try{
     const b=await jsonBody(req);
     if(!b.customer_name||!b.phone||!validPickup(b.pickup_time)||!Array.isArray(b.items)||!b.items.length) return send(res,400,{error:"Dati ordine incompleti"});
+    let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}
     const orders=readOrders(), id=nextId(orders);
-    const total=b.items.reduce((s,x)=>s+(Number(x.price)||0)*(Number(x.qty)||0),0);
+    const total=items.reduce((s,x)=>s+x.price*x.qty,0);
     const now=new Date();
     const order={id,pickup_time:b.pickup_time,customer_name:String(b.customer_name).slice(0,80),phone:String(b.phone).slice(0,40),
-      items:b.items.map(x=>({qty:Number(x.qty)||1,name:String(x.name||"").slice(0,80),ingredients:String(x.ingredients||"").slice(0,200),changes:String(x.changes||"").slice(0,200),price:Number(x.price)||0})),
+      items,
       notes:String(b.notes||"").slice(0,300),total:Number(total.toFixed(2)),received_at:now.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}),
       created_at:now.toISOString(),status:"pending",print_token:crypto.randomBytes(12).toString("hex")};
     orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order});
