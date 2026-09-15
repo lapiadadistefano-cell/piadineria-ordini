@@ -6,58 +6,20 @@ const ORDERS=path.join(DATA,"orders.json");
 const PUB=path.join(__dirname,"public");
 const MENU=path.join(PUB,"menu.json");
 fs.mkdirSync(DATA,{recursive:true}); if(!fs.existsSync(ORDERS)) fs.writeFileSync(ORDERS,"[]");
-
 function readOrders(){try{return JSON.parse(fs.readFileSync(ORDERS,"utf8"))}catch{return[]}}
 function writeOrders(x){fs.writeFileSync(ORDERS,JSON.stringify(x,null,2))}
 function readMenu(){try{return JSON.parse(fs.readFileSync(MENU,"utf8"))}catch{return[]}}
 function send(res,status,obj,headers={}){const body=typeof obj==="string"?obj:JSON.stringify(obj);res.writeHead(status,{"Content-Type":typeof obj==="string"?"text/plain; charset=utf-8":"application/json; charset=utf-8",...headers});res.end(body)}
 function jsonBody(req){return new Promise((resolve,reject)=>{let b="";req.on("data",c=>{b+=c;if(b.length>1e6)req.destroy()});req.on("end",()=>{try{resolve(JSON.parse(b||"{}"))}catch(e){reject(e)}})})}
-function nextId(orders){const d=new Date(), ymd=d.toISOString().slice(0,10).replaceAll("-","");const today=orders.filter(o=>o.created_at?.startsWith(d.toISOString().slice(0,10))).length+1;return `${ymd}-${String(today).padStart(3,"0")}`}
+function romeParts(d=new Date()){const p=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(d).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return{weekday:p.weekday,date:`${p.year}-${p.month}-${p.day}`,ymd:`${p.year}${p.month}${p.day}`,minutes:Number(p.hour)*60+Number(p.minute),time:`${p.hour}:${p.minute}`}}
+function nextId(orders){const r=romeParts(),today=orders.filter(o=>o.local_date===r.date||o.id?.startsWith(r.ymd)).length+1;return `${r.ymd}-${String(today).padStart(3,"0")}`}
 function isBridge(req){return req.headers["x-api-key"]===BRIDGE_KEY}
-function validPickup(s){return /^([01]\d|2[0-3]):[0-5]\d$/.test(s||"")}
-function officialItems(items){
- const menu=readMenu();
- return items.map(x=>{
-   const qty=Math.max(1,Math.min(20,Math.floor(Number(x.qty)||1)));
-   const name=String(x.name||"").trim();
-   const product=menu.find(m=>m.name===name);
-   if(!product) throw Error(`Prodotto non valido: ${name||"senza nome"}`);
-   return {qty,name:product.name,ingredients:product.ingredients,changes:String(x.changes||"").slice(0,200),price:Number(product.price)};
- });
-}
-
-const server=http.createServer(async(req,res)=>{
- const u=new URL(req.url,`http://${req.headers.host}`);
- if(req.method==="POST"&&u.pathname==="/api/orders"){
-   try{
-    const b=await jsonBody(req);
-    if(!b.customer_name||!b.phone||!validPickup(b.pickup_time)||!Array.isArray(b.items)||!b.items.length) return send(res,400,{error:"Dati ordine incompleti"});
-    let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}
-    const orders=readOrders(), id=nextId(orders);
-    const total=items.reduce((s,x)=>s+x.price*x.qty,0);
-    const now=new Date();
-    const order={id,pickup_time:b.pickup_time,customer_name:String(b.customer_name).slice(0,80),phone:String(b.phone).slice(0,40),
-      items,
-      notes:String(b.notes||"").slice(0,300),total:Number(total.toFixed(2)),received_at:now.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}),
-      created_at:now.toISOString(),status:"pending",print_token:crypto.randomBytes(12).toString("hex")};
-    orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order});
-   }catch(e){return send(res,400,{error:"JSON non valido"})}
- }
- if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){
-   if(!isBridge(req)) return send(res,401,{error:"Non autorizzato"});
-   const orders=readOrders().filter(o=>o.status==="pending").slice(0,20);
-   return send(res,200,{orders});
- }
- if(req.method==="POST"&&u.pathname.startsWith("/api/bridge/orders/")&&u.pathname.endsWith("/printed")){
-   if(!isBridge(req)) return send(res,401,{error:"Non autorizzato"});
-   const id=decodeURIComponent(u.pathname.split("/")[4]), orders=readOrders(), o=orders.find(x=>x.id===id);
-   if(!o)return send(res,404,{error:"Ordine non trovato"});o.status="printed";o.printed_at=new Date().toISOString();writeOrders(orders);return send(res,200,{ok:true});
- }
- if(req.method==="GET"&&u.pathname==="/api/health")return send(res,200,{ok:true});
- let file=u.pathname==="/"?"index.html":u.pathname.replace(/^\/+/,"");
- const fp=path.join(PUB,file);
- if(!fp.startsWith(PUB)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory())return send(res,404,"Not found");
- const ext=path.extname(fp), ct={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8"}[ext]||"application/octet-stream";
- res.writeHead(200,{"Content-Type":ct,"Cache-Control":"no-store"});fs.createReadStream(fp).pipe(res);
-});
+function pickupMinutes(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s||""))return null;const[h,m]=s.split(":").map(Number);return h*60+m}
+function validatePickup(s){const r=romeParts(),pm=pickupMinutes(s);if(r.weekday==="Sun")return"La domenica siamo chiusi";if(pm===null)return"Orario di ritiro non valido";const inWindow=(pm>=690&&pm<=840)||(pm>=1050&&pm<=1200);if(!inWindow||pm%10!==0)return"Orario di ritiro non disponibile";if(pm<r.minutes+20)return"Scegli un orario di ritiro con almeno 20 minuti di anticipo";return null}
+function officialItems(items){const menu=readMenu();return items.map(x=>{const qty=Math.max(1,Math.min(20,Math.floor(Number(x.qty)||1))),name=String(x.name||"").trim(),product=menu.find(m=>m.name===name);if(!product)throw Error(`Prodotto non valido: ${name||"senza nome"}`);return{qty,name:product.name,ingredients:product.ingredients,changes:String(x.changes||"").slice(0,200),price:Number(product.price)}})}
+const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host}`);
+ if(req.method==="POST"&&u.pathname==="/api/orders"){try{const b=await jsonBody(req);if(!b.customer_name||!b.phone||!Array.isArray(b.items)||!b.items.length)return send(res,400,{error:"Dati ordine incompleti"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}const orders=readOrders(),id=nextId(orders),total=items.reduce((s,x)=>s+x.price*x.qty,0),now=new Date(),rp=romeParts(now);const order={id,pickup_time:b.pickup_time,customer_name:String(b.customer_name).slice(0,80),phone:String(b.phone).slice(0,40),items,notes:String(b.notes||"").slice(0,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",print_token:crypto.randomBytes(12).toString("hex")};orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,400,{error:"JSON non valido"})}}
+ if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});return send(res,200,{orders:readOrders().filter(o=>o.status==="pending").slice(0,20)})}
+ if(req.method==="POST"&&u.pathname.startsWith("/api/bridge/orders/")&&u.pathname.endsWith("/printed")){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});const id=decodeURIComponent(u.pathname.split("/")[4]),orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return send(res,404,{error:"Ordine non trovato"});o.status="printed";o.printed_at=new Date().toISOString();writeOrders(orders);return send(res,200,{ok:true})}
+ if(req.method==="GET"&&u.pathname==="/api/health")return send(res,200,{ok:true});let file=u.pathname==="/"?"index.html":u.pathname.replace(/^\/+/,""),fp=path.join(PUB,file);if(!fp.startsWith(PUB)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory())return send(res,404,"Not found");const ext=path.extname(fp),ct={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8"}[ext]||"application/octet-stream";res.writeHead(200,{"Content-Type":ct,"Cache-Control":"no-store"});fs.createReadStream(fp).pipe(res)});
 server.listen(PORT,()=>console.log(`Piadineria server attivo sulla porta ${PORT}`));
