@@ -1,40 +1,230 @@
 [
-{"cat":"Piadine Classiche","price":6.5,"name":"ROMAGNOLA","ingredients":"Crudo, Squacquerone, Rucola"},
-{"cat":"Piadine Classiche","price":6.5,"name":"FRESCA","ingredients":"Cotto, Mozzarella, Lattuga, Salsa Rosa"},
-{"cat":"Piadine Classiche","price":6.5,"name":"LOCALE","ingredients":"Padano, Grana, Lattuga, Funghi"},
-{"cat":"Piadine Classiche","price":6.5,"name":"PICCANTINA","ingredients":"Piccante, Robiola, Cetrioli, Maionese"},
-{"cat":"Piadine Classiche","price":6.5,"name":"SFIZIOSA","ingredients":"Crema salmone, Mozzarella, Patè, Salsa Tartara"},
-{"cat":"Piadine Classiche","price":6.5,"name":"MAIALOSA","ingredients":"Cotto, Grana, Rucola, Salsa Red Hot"},
-{"cat":"Piadine Classiche","price":6.5,"name":"TOSCANA","ingredients":"Finocchiona, Gorgonzola, Cetrioli, Salsa Tartara"},
-{"cat":"Piadine Classiche","price":6.5,"name":"DIAVOLINA","ingredients":"Piccante, Gorgonzola, Patè, Lattuga"},
-{"cat":"Piadine Classiche","price":6.5,"name":"RUSTICA","ingredients":"Tacchino, Robiola, Rucola, Cetrioli"},
-{"cat":"Piadine Classiche","price":6.5,"name":"PADANA","ingredients":"Padano, Robiola, Patè, Funghi"},
-{"cat":"Piadine Classiche","price":6.5,"name":"DELIKATESSEN","ingredients":"Cotto, Robiola, Funghi, Salsa Tartara"},
-{"cat":"Piadine Classiche","price":6.5,"name":"PESCIOLINA","ingredients":"Tonno, Squacquerone, Rucola, Salsa Rosa"},
-{"cat":"Piadine Classiche","price":6.5,"name":"SUDTIROLESE","ingredients":"Speck, Grana, Cetrioli, Salsa Boscaiola"},
-{"cat":"Piadine Classiche","price":6.5,"name":"GUSTOSA","ingredients":"Crema salmone, Squacquerone, Lattuga, Patè"},
-{"cat":"Piadine Classiche","price":6.5,"name":"PIANURA","ingredients":"Tacchino, Mozzarella, Salsa Boscaiola, Rucola"},
-{"cat":"Piadine Veggie","price":7,"name":"VIOLA","ingredients":"Squacquerone, Grigliate, Radicchio"},
-{"cat":"Piadine Veggie","price":7,"name":"CARCIOFA","ingredients":"Robiola, Zucchine, Funghi, Carciofi"},
-{"cat":"Piadine Veggie","price":7,"name":"ZUMBA","ingredients":"Zucchine, Bufala, Basilico, Pomodori"},
-{"cat":"Piadine Veggie","price":7,"name":"ORTICELLO","ingredients":"Mozzarella, Cavolo, Melanzane, Cetrioli"},
-{"cat":"Piadine Veggie","price":7,"name":"CAVOLONA","ingredients":"Phila vegan, Cavolo, Zucca, Pomodori"},
-{"cat":"Piadine Veggie","price":7,"name":"VEGA","ingredients":"Grigliate, Patè, Cetrioli, Rucola"},
-{"cat":"Piadine Veggie","price":7,"name":"ISABELLA","ingredients":"Phila vegan, Zucchine, Funghi, Carciofi"},
-{"cat":"Piadine Veggie","price":7,"name":"VEGGY","ingredients":"Phila vegan, Melanzane, Pomodori, Cavolo"},
-{"cat":"Piadine Veggie","price":7,"name":"MEDITERRANEA","ingredients":"Radicchio, Grigliate, Pomodori, Basilico"},
-{"cat":"Piadine Speciali","price":8,"name":"ALPINA","ingredients":"Pancetta coppata, Gorgonzola, Rucola, Cetriolini, Salsa Boscaiola"},
-{"cat":"Piadine Speciali","price":8,"name":"CARBONINA","ingredients":"Speck, Salsa Carbonara, Grana a scaglie, Lattuga"},
-{"cat":"Piadine Speciali","price":8,"name":"COTOLETTONA","ingredients":"Cotoletta di pollo, Squacquerone, Lattuga, Salsa Tartara"},
-{"cat":"Piadine Speciali","price":8,"name":"DOP SPECIALE","ingredients":"Prosciutto crudo, Bufala, Basilico, Pomodorini, Panna acida"},
-{"cat":"Rotolini","price":7.5,"name":"CLASSICO","ingredients":"Crudo, Squacquerone, Rucola"},
-{"cat":"Rotolini","price":7.5,"name":"DELICATO","ingredients":"Cotto, Robiola, Lattuga"},
-{"cat":"Rotolini","price":7.5,"name":"PICCANTOSO","ingredients":"Piccante, Squacquerone, Funghi"},
-{"cat":"Rotolini","price":7.5,"name":"RUSTICHELLO","ingredients":"Padano, Robiola, Salsa Boscaiola"},
-{"cat":"Rotolini","price":7.5,"name":"DELIZIOSO","ingredients":"Tacchino, Mozzarella, Salsa Rosa"},
-{"cat":"Rotolini","price":7.5,"name":"FIORENTINO","ingredients":"Finocchiona, Squacquerone, Cavolo"},
-{"cat":"Rotolini","price":7.5,"name":"BUFALINO","ingredients":"Crudo, Bufala, Lattuga"},
-{"cat":"Rotolini","price":7.5,"name":"SAPORITO","ingredients":"Padano, Robiola, Salsa Tartara"},
-{"cat":"Rotolini","price":7.5,"name":"T.N.T.","ingredients":"Piccante, Gorgonzola, Salsa Red Hot"},
-{"cat":"Rotolini","price":7.5,"name":"CAVOLOTTO","ingredients":"Cotto, Squacquerone, Cavolo"}
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "ROMAGNOLA",
+    "ingredients": "Crudo, Squacquerone, Rucola"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "FRESCA",
+    "ingredients": "Cotto, Mozzarella, Lattuga, Salsa Rosa"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "LOCALE",
+    "ingredients": "Padano, Grana, Lattuga, Funghi"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "PICCANTINA",
+    "ingredients": "Piccante, Robiola, Cetrioli, Maionese"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "SFIZIOSA",
+    "ingredients": "Crema salmone, Mozzarella, Patè, Salsa Tartara"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "MAIALOSA",
+    "ingredients": "Cotto, Grana, Rucola, Salsa Red Hot"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "TOSCANA",
+    "ingredients": "Finocchiona, Gorgonzola, Cetrioli, Salsa Tartara"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "DIAVOLINA",
+    "ingredients": "Piccante, Gorgonzola, Patè, Lattuga"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "RUSTICA",
+    "ingredients": "Tacchino, Robiola, Rucola, Cetrioli"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "PADANA",
+    "ingredients": "Padano, Robiola, Patè, Funghi"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "DELIKATESSEN",
+    "ingredients": "Cotto, Robiola, Funghi, Salsa Tartara"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "PESCIOLINA",
+    "ingredients": "Tonno, Squacquerone, Rucola, Salsa Rosa"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "SUDTIROLESE",
+    "ingredients": "Speck, Grana, Cetrioli, Salsa Boscaiola"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "GUSTOSA",
+    "ingredients": "Crema salmone, Squacquerone, Lattuga, Patè"
+  },
+  {
+    "cat": "Piadine Classiche",
+    "price": 7,
+    "name": "PIANURA",
+    "ingredients": "Tacchino, Mozzarella, Salsa Boscaiola, Rucola"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "VIOLA",
+    "ingredients": "Squacquerone, Grigliate, Radicchio"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "CARCIOFA",
+    "ingredients": "Robiola, Zucchine, Funghi, Carciofi"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "ZUMBA",
+    "ingredients": "Zucchine, Bufala, Basilico, Pomodori"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "ORTICELLO",
+    "ingredients": "Mozzarella, Cavolo, Melanzane, Cetrioli"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "CAVOLONA",
+    "ingredients": "Phila vegan, Cavolo, Zucca, Pomodori"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "VEGA",
+    "ingredients": "Grigliate, Patè, Cetrioli, Rucola"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "ISABELLA",
+    "ingredients": "Phila vegan, Zucchine, Funghi, Carciofi"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "VEGGY",
+    "ingredients": "Phila vegan, Melanzane, Pomodori, Cavolo"
+  },
+  {
+    "cat": "Piadine Veggie",
+    "price": 7,
+    "name": "MEDITERRANEA",
+    "ingredients": "Radicchio, Grigliate, Pomodori, Basilico"
+  },
+  {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "ALPINA",
+    "ingredients": "Pancetta coppata, Gorgonzola, Rucola, Cetriolini, Salsa Boscaiola"
+  },
+  {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "CARBONINA",
+    "ingredients": "Speck, Salsa Carbonara, Grana a scaglie, Lattuga"
+  },
+  {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "COTOLETTONA",
+    "ingredients": "Cotoletta di pollo, Squacquerone, Lattuga, Salsa Tartara"
+  },
+  {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "DOP SPECIALE",
+    "ingredients": "Prosciutto crudo, Bufala, Basilico, Pomodorini, Panna acida"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "CLASSICO",
+    "ingredients": "Crudo, Squacquerone, Rucola"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "DELICATO",
+    "ingredients": "Cotto, Robiola, Lattuga"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "PICCANTOSO",
+    "ingredients": "Piccante, Squacquerone, Funghi"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "RUSTICHELLO",
+    "ingredients": "Padano, Robiola, Salsa Boscaiola"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "DELIZIOSO",
+    "ingredients": "Tacchino, Mozzarella, Salsa Rosa"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "FIORENTINO",
+    "ingredients": "Finocchiona, Squacquerone, Cavolo"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "BUFALINO",
+    "ingredients": "Crudo, Bufala, Lattuga"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "SAPORITO",
+    "ingredients": "Padano, Robiola, Salsa Tartara"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "T.N.T.",
+    "ingredients": "Piccante, Gorgonzola, Salsa Red Hot"
+  },
+  {
+    "cat": "Rotolini",
+    "price": 8,
+    "name": "CAVOLOTTO",
+    "ingredients": "Cotto, Squacquerone, Cavolo"
+  }
 ]
