@@ -168,6 +168,12 @@
     "ingredients": "Prosciutto crudo, Bufala, Basilico, Pomodorini, Panna acida"
   },
   {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "POLPETTOSA",
+    "ingredients": "Polpette di manzo, Squacquerone, Grana a scaglie, Rucola, Crema ai carciofi"
+  },
+  {
     "cat": "Rotolini",
     "price": 8,
     "name": "CLASSICO",
