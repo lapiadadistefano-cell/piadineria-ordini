@@ -152,12 +152,6 @@
   {
     "cat": "Piadine Speciali",
     "price": 8,
-    "name": "CARBONINA",
-    "ingredients": "Speck, Salsa Carbonara, Grana a scaglie, Lattuga"
-  },
-  {
-    "cat": "Piadine Speciali",
-    "price": 8,
     "name": "COTOLETTONA",
     "ingredients": "Cotoletta di pollo, Squacquerone, Lattuga, Salsa Tartara"
   },
