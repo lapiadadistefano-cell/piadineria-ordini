@@ -15,6 +15,8 @@ on:
       - 'sandbox/v9-staging-observer-offline-test.ps1'
       - 'sandbox/v9-offline-order-reader.ps1'
       - 'sandbox/v9-offline-order-reader-test.ps1'
+      - 'sandbox/v9-sandbox-fixture-observer.ps1'
+      - 'sandbox/v9-sandbox-fixture-observer-offline-test.ps1'
 jobs:
   offline-test:
     runs-on: windows-latest
@@ -40,6 +42,10 @@ jobs:
       - name: Test synthetic complete order decisions offline
         shell: pwsh
         run: ./sandbox/v9-offline-order-reader-test.ps1
+
+      - name: Test fixed synthetic fixture observer with fake server
+        shell: pwsh
+        run: ./sandbox/v9-sandbox-fixture-observer-offline-test.ps1
 
       - name: Validate printer preflight offline only
         shell: pwsh
