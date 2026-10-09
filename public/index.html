@@ -11,7 +11,7 @@ async function submitMyposTest(){
   if(!cart.length)throw Error("Il carrello è vuoto");
   if($("pickup").disabled)throw Error("Nessun orario di ritiro disponibile");
   const customer_name=$("customerName").value.trim(),phone=$("customerPhone").value.trim();
-  if(customer_name.length<2||phone.replace(/\\D/g,"").length<6)throw Error("Inserisci nome e telefono validi");
+  if(customer_name.length<2||phone.replace(/\D/g,"").length<6)throw Error("Inserisci nome e telefono validi");
   sending=true;btn.disabled=true;btn.textContent="Preparazione pagamento di prova...";
   const body={customer_name,phone,pickup_time:$("pickup").value,notes:$("notes").value.trim(),items:cart.map(x=>({qty:x.qty,name:x.name,changes:x.changes||""}))};
   const response=await fetch("/api/mypos/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
