@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V9 - Verifica manuale (demo)</title>
+<style>
+body{font:18px system-ui,sans-serif;max-width:760px;margin:30px auto;padding:18px;color:#20272b;background:#f8fafb}
+main{background:white;border:1px solid #d9e1e5;border-radius:14px;padding:24px}
+h1{font-size:1.65rem;margin-top:0} .notice{background:#fff2cd;padding:14px;border-radius:8px;font-weight:700}
+section{border:1px solid #d9e1e5;border-radius:10px;padding:16px;margin:18px 0}
+label{display:block;margin:12px 0 5px}input{box-sizing:border-box;width:100%;font:inherit;padding:12px;border:1px solid #8899a3;border-radius:7px}
+button{font:inherit;padding:12px 16px;border:0;border-radius:8px;background:#145b42;color:white;margin:10px 8px 0 0;cursor:pointer}
+button.secondary{background:#34495e}button:disabled{background:#a6afb5;cursor:not-allowed}
+#status{font-weight:700}#audit{white-space:pre-wrap;font-size:15px;background:#eef2f4;padding:12px;border-radius:8px}
+</style></head><body><main>
+<h1>Verifica manuale comande V9</h1>
+<p class="notice">SOLO DIMOSTRAZIONE — ordine inventato. Nessun collegamento al database, agli ordini reali o alla stampante.</p>
+<section><h2>Comanda di prova LAB-001</h2><p>1 piadina speciale — € 8,00 (dati inventati)</p>
+<p>Pagamento: <strong>verificato (simulazione)</strong></p><p>Situazione: <strong id="status">Stampa interrotta: controllo necessario</strong></p>
+<p>Prima di autorizzare una ristampa, controlla sempre se la comanda cartacea è già uscita.</p>
+<label for="operator">Nome dell'operatore che esegue la verifica</label>
+<input id="operator" autocomplete="off" maxlength="60" placeholder="Scrivi il nome">
+<button id="printed">La comanda è già stampata</button>
+<button class="secondary" id="retry">Ho controllato: autorizza un nuovo tentativo</button>
+</section>
+<section><h2>Registro dimostrativo</h2><div id="audit" role="status" aria-live="polite">In attesa della verifica.</div>
+<button id="reset" class="secondary">Ricomincia la dimostrazione</button></section>
+<p><small>Questa pagina simula soltanto le decisioni. Nessuna scelta viene inviata al server o salvata nel database. Non usarla per gestire comande vere.</small></p>
+</main><script>
+"use strict";
+const status=document.getElementById("status"),audit=document.getElementById("audit"),operator=document.getElementById("operator");
+const printed=document.getElementById("printed"),retry=document.getElementById("retry");
+function finish(action){
+ const reviewer=operator.value.trim();
+ if(!reviewer){operator.focus();audit.textContent="Inserisci il nome dell'operatore prima di procedere.";return;}
+ const isPrinted=action==="confirm_printed";
+ status.textContent=isPrinted?"Segnata come stampata (solo demo)":"Nuovo tentativo autorizzato (solo demo; nessuna stampa)";
+ audit.textContent="Comanda: LAB-001\nOperatore: "+reviewer+"\nDecisione: "+(isPrinted?"già stampata":"ristampa autorizzata dopo controllo")+"\nOra: "+new Date().toLocaleString("it-IT")+"\nNessun dato inviato o salvato.";
+ printed.disabled=true;retry.disabled=true;operator.disabled=true;
+}
+printed.onclick=()=>finish("confirm_printed");retry.onclick=()=>finish("retry_after_check");
+document.getElementById("reset").onclick=()=>{
+ status.textContent="Stampa interrotta: controllo necessario";audit.textContent="In attesa della verifica.";
+ operator.value="";operator.disabled=false;printed.disabled=false;retry.disabled=false;
+};
+</script></body></html>
