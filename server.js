@@ -56,7 +56,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    orders[orders.indexOf(order)]=updated;writeOrders(orders);
    return send(res,200,"OK");
  }catch(e){console.error("myPOS sandbox notify rejected:",e.message);return send(res,400,"FAIL")}}
- if(MYPOS_SANDBOX&&req.method==="GET"&&(u.pathname==="/mypos/return"||u.pathname==="/mypos/cancel"))
+ if(MYPOS_SANDBOX&&(req.method==="GET"||req.method==="POST")&&(u.pathname==="/mypos/return"||u.pathname==="/mypos/cancel"))
    return send(res,200,u.pathname==="/mypos/return"?"Pagamento in verifica: attendi la conferma dell'ordine.":"Pagamento annullato. Nessun ordine inviato.");
  if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});return send(res,200,{orders:readOrders().filter(isPrintable).slice(0,20)})}
  if(req.method==="POST"&&u.pathname.startsWith("/api/bridge/orders/")&&u.pathname.endsWith("/printed")){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});const id=decodeURIComponent(u.pathname.split("/")[4]),orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return send(res,404,{error:"Ordine non trovato"});if(!isPrintable(o))return send(res,409,{error:"Ordine non autorizzato alla stampa"});o.status="printed";o.printed_at=new Date().toISOString();writeOrders(orders);return send(res,200,{ok:true})}
