@@ -2,8 +2,11 @@ const http=require("http"),fs=require("fs"),path=require("path"),crypto=require(
 const {isPrintable,createAwaitingPayment}=require("./lib/payment-state");
 const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
+const {createSandboxStore}=require("./lib/sandbox-postgres");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
+const SANDBOX_DB_ENABLED=MYPOS_SANDBOX&&process.env.MYPOS_SANDBOX_DB_ENABLED==="true";
+const sandboxStore=SANDBOX_DB_ENABLED?createSandboxStore(process.env.DATABASE_URL):null;
 const MYPOSTEST_DIAG={received:0,accepted:0,rejected:0,lastOutcome:"none",lastReason:"none"};
 function myposDiag(outcome,reason="none"){
   MYPOSTEST_DIAG.received++;
@@ -51,20 +54,24 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      created_at:now.toISOString(),print_token:crypto.randomBytes(12).toString("hex"),status:"pending"},reference);
    const checkout=buildSandboxCheckout({order,baseUrl:process.env.MYPOS_PUBLIC_BASE_URL,
      privateKey:(process.env.MYPOS_SANDBOX_PRIVATE_KEY||"").replace(/\\n/g,"\n")});
-   orders.push(order);writeOrders(orders);
+   if(sandboxStore)await sandboxStore.insert(order);
+   else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/diagnostics"){
-   return send(res,200,{staging:STAGING_DISABLE_BRIDGE,sandboxEnabled:MYPOS_SANDBOX,notifications:{...MYPOSTEST_DIAG},note:"Counts since last server start only; no order or payment details exposed"});
+   return send(res,200,{staging:STAGING_DISABLE_BRIDGE,sandboxEnabled:MYPOS_SANDBOX,databaseEnabled:!!sandboxStore,notifications:{...MYPOSTEST_DIAG},note:"Counts since last server start only; no order or payment details exposed"});
  }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/notify"){try{
    if(!String(req.headers["content-type"]||"").toLowerCase().startsWith("application/x-www-form-urlencoded"))return send(res,415,"Unsupported");
    let raw="";for await(const chunk of req){raw+=chunk;if(raw.length>20000)return send(res,413,"Too large")}
-   const fields=parseNotification(raw),orders=readOrders(),order=orders.find(o=>o.payment_reference===fields.OrderID);
-   if(!order)return send(res,404,"Unknown order");
-   const updated=processPurchaseNotify(order,fields,(process.env.MYPOS_SANDBOX_API_PUBLIC_KEY||"").replace(/\\n/g,"\n"),
-     process.env.MYPOS_SANDBOX_STORE_ID||"000000000000010");
-   orders[orders.indexOf(order)]=updated;writeOrders(orders);
+   const fields=parseNotification(raw);
+   const verify=order=>processPurchaseNotify(order,fields,(process.env.MYPOS_SANDBOX_API_PUBLIC_KEY||"").replace(/\\n/g,"\n"),process.env.MYPOS_SANDBOX_STORE_ID||"000000000000010");
+   if(sandboxStore)await sandboxStore.updateVerified(fields.OrderID,verify);
+   else {
+     const orders=readOrders(),order=orders.find(o=>o.payment_reference===fields.OrderID);
+     if(!order)return send(res,404,"Unknown order");
+     const updated=verify(order);orders[orders.indexOf(order)]=updated;writeOrders(orders);
+   }
    myposDiag("accepted");
    return send(res,200,"OK");
  }catch(e){myposDiag("rejected",e.message==="Invalid signature"?"signature":e.message==="Unknown order"?"unknown_order":"validation");console.error("myPOS sandbox notify rejected:",e.message);return send(res,400,"FAIL")}}
