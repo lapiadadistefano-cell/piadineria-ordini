@@ -58,6 +58,11 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/persistence-check"){
+   if(!sandboxStore)return send(res,503,{databaseEnabled:false});
+   try { const counts=await sandboxStore.counts();return send(res,200,{databaseEnabled:true,ordersStored:counts.total,verifiedPaidStored:counts.verified_paid,note:"Aggregate sandbox counts only; no customer data"}); }
+   catch(e){console.error("Sandbox persistence check failed:",e.message);return send(res,503,{error:"Database unavailable"})}
+ }
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/diagnostics"){
    return send(res,200,{staging:STAGING_DISABLE_BRIDGE,sandboxEnabled:MYPOS_SANDBOX,databaseEnabled:!!sandboxStore,notifications:{...MYPOSTEST_DIAG},note:"Counts since last server start only; no order or payment details exposed"});
  }
