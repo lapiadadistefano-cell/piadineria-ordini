@@ -1,0 +1,29 @@
+name: V9 sandbox unauthorized access check
+on:
+  workflow_dispatch:
+  push:
+    branches: [test-mypos-sandbox]
+    paths:
+      - '.github/workflows/v9-unauthorized-check.yml'
+jobs:
+  deny-unauthorized:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject POST without V9 key on staging only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://la-piada-mypos-sandbox-test.onrender.com/api/v9-lab/resolve-review"
+          BODY='{"reference":"LAB-UNAUTHORIZED-TEST","action":"confirm_printed","reviewer":"Test"}'
+          for attempt in 1 2 3; do
+            status=$(curl --silent --show-error --max-time 35 --output response.txt --write-out '%{http_code}' --request POST "$URL" --header 'Content-Type: application/json' --data "$BODY") || status="000"
+            if [ "$status" = "403" ]; then
+              grep -q 'Forbidden' response.txt
+              echo "PASS: unauthenticated write rejected with HTTP 403"
+              exit 0
+            fi
+            echo "Attempt $attempt: unexpected HTTP $status"
+            sleep 15
+          done
+          echo "FAIL: staging did not return expected 403"
+          exit 1
