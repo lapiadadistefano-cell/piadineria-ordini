@@ -1,5 +1,5 @@
 const http=require("http"),fs=require("fs"),path=require("path"),crypto=require("crypto");
-const {isPrintable,createAwaitingPayment}=require("./lib/payment-state");
+const {isPrintable,createAwaitingPayment,simulatePrintOnce}=require("./lib/payment-state");
 const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
 const {createSandboxStore}=require("./lib/sandbox-postgres");
@@ -58,6 +58,19 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/print-simulation"){
+   if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
+   try {
+     const reference="SIM-PRINT-"+crypto.randomBytes(12).toString("hex");
+     const order={id:reference,status:"pending",payment_method:"mypos",payment_status:"paid",
+       payment_verified:true,payment_reference:reference,total:7,created_at:new Date().toISOString()};
+     await sandboxStore.insert(order);
+     const first=await sandboxStore.simulatePrintOnce(reference,simulatePrintOnce);
+     const second=await sandboxStore.simulatePrintOnce(reference,simulatePrintOnce);
+     return send(res,200,{simulationOnly:true,firstPrinted:first.printed,secondPrinted:second.printed,
+       finalStatus:second.status,noPrinterConnected:true});
+   }catch(e){console.error("Sandbox print simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
+ }
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/persistence-check"){
    if(!sandboxStore)return send(res,503,{databaseEnabled:false});
    try { const counts=await sandboxStore.counts();return send(res,200,{databaseEnabled:true,ordersStored:counts.total,verifiedPaidStored:counts.verified_paid,note:"Aggregate sandbox counts only; no customer data"}); }
