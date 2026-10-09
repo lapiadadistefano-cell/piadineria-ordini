@@ -27,3 +27,20 @@ jobs:
           done
           echo "FAIL: staging did not return expected 403"
           exit 1
+      - name: Reject GET lab status without V9 key on staging only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://la-piada-mypos-sandbox-test.onrender.com/api/v9-lab/status"
+          for attempt in 1 2 3; do
+            status=$(curl --silent --show-error --max-time 35 --output response.txt --write-out '%{http_code}' "$URL") || status="000"
+            if [ "$status" = "403" ]; then
+              grep -q 'Forbidden' response.txt
+              echo "PASS: unauthenticated lab status rejected with HTTP 403"
+              exit 0
+            fi
+            echo "Attempt $attempt: unexpected HTTP $status"
+            sleep 15
+          done
+          echo "FAIL: staging did not return expected 403"
+          exit 1
