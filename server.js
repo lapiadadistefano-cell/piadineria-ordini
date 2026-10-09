@@ -3,6 +3,7 @@ const {isPrintable,createAwaitingPayment,simulatePrintOnce}=require("./lib/payme
 const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
 const {createSandboxStore}=require("./lib/sandbox-postgres");
+const {runPrintLifecycleSimulation}=require("./lib/print-lifecycle-simulation");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
 const SANDBOX_DB_ENABLED=MYPOS_SANDBOX&&process.env.MYPOS_SANDBOX_DB_ENABLED==="true";
@@ -58,6 +59,10 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/lifecycle-simulation"){
+   try{return send(res,200,runPrintLifecycleSimulation())}
+   catch(e){console.error("Lifecycle simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
+ }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/print-simulation"){
    if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
    try {
