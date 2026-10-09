@@ -6,6 +6,8 @@ on:
     paths:
       - 'sandbox/v9-bridge-offline-lab.ps1'
       - '.github/workflows/v9-offline-lab.yml'
+      - 'sandbox/v9-readonly-check.ps1'
+      - 'sandbox/v9-readonly-check-offline-test.ps1'
 jobs:
   offline-test:
     runs-on: windows-latest
@@ -15,3 +17,7 @@ jobs:
         shell: pwsh
         run: |
           ./sandbox/v9-bridge-offline-lab.ps1
+      - name: Test authorized read-only sandbox request with fake server
+        shell: pwsh
+        run: |
+          ./sandbox/v9-readonly-check-offline-test.ps1
