@@ -9,6 +9,7 @@ test("sandbox database persists interrupted printing as manual review and blocks
   let saved={id:reference,payment_reference:reference,status:"pending",payment_method:"mypos",payment_status:"paid",payment_verified:true};
   let locks=0;
   class FakePool {
+    async query(sql,args=[]){if(sql.includes("SELECT order_data"))return {rowCount:1,rows:[{order_data:structuredClone(saved)}]};throw Error("Unexpected pool query");}
     async connect(){
       return {query:async(sql,args=[])=>{
         if(sql==="BEGIN"){locks++;return {rowCount:0,rows:[]};}
