@@ -8,6 +8,7 @@ on:
       - '.github/workflows/v9-offline-lab.yml'
       - 'sandbox/v9-readonly-check.ps1'
       - 'sandbox/v9-readonly-check-offline-test.ps1'
+      - 'sandbox/v9-windows-recovery-offline-test.ps1'
 jobs:
   offline-test:
     runs-on: windows-latest
@@ -21,3 +22,7 @@ jobs:
         shell: pwsh
         run: |
           ./sandbox/v9-readonly-check-offline-test.ps1
+      - name: Test offline V9 Windows crash recovery and duplicate safety
+        shell: pwsh
+        run: |
+          ./sandbox/v9-windows-recovery-offline-test.ps1
