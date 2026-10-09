@@ -44,3 +44,13 @@ jobs:
           done
           echo "FAIL: staging did not return expected 403"
           exit 1
+
+      - name: Reject synthetic fixture creation without V9 key
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://la-piada-mypos-sandbox-test.onrender.com/api/v9-lab/create-review-fixture"
+          status=$(curl --silent --show-error --max-time 40 --output response.txt --write-out '%{http_code}' --request POST "$URL" --header 'Content-Type: application/json' --data '{"reference":"LAB-001"}')
+          test "$status" = "403"
+          grep -q 'Forbidden' response.txt
+          echo 'PASS: unauthorized synthetic fixture creation denied'
