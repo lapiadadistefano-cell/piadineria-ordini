@@ -4,6 +4,14 @@ const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
+const MYPOSTEST_DIAG={received:0,accepted:0,rejected:0,lastOutcome:"none",lastReason:"none"};
+function myposDiag(outcome,reason="none"){
+  MYPOSTEST_DIAG.received++;
+  if(outcome==="accepted")MYPOSTEST_DIAG.accepted++;else MYPOSTEST_DIAG.rejected++;
+  MYPOSTEST_DIAG.lastOutcome=outcome;
+  MYPOSTEST_DIAG.lastReason=reason;
+}
+
 const PORT=process.env.PORT||8080,BRIDGE_KEY=process.env.BRIDGE_KEY||"CAMBIA-QUESTA-CHIAVE",DATA=process.env.DATA_DIR||path.join(__dirname,"data"),ORDERS=path.join(DATA,"orders.json"),PUB=path.join(__dirname,"public"),MENU=path.join(PUB,"menu.json");
 fs.mkdirSync(DATA,{recursive:true});if(!fs.existsSync(ORDERS))fs.writeFileSync(ORDERS,"[]");
 const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ORDERS,"utf8"))}catch{return[]}},writeOrders=x=>fs.writeFileSync(ORDERS,JSON.stringify(x,null,2)),readMenu=()=>{try{return JSON.parse(fs.readFileSync(MENU,"utf8"))}catch{return[]}};
@@ -46,6 +54,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    orders.push(order);writeOrders(orders);
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/diagnostics"){
+   return send(res,200,{staging:STAGING_DISABLE_BRIDGE,sandboxEnabled:MYPOS_SANDBOX,notifications:{...MYPOSTEST_DIAG},note:"Counts since last server start only; no order or payment details exposed"});
+ }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/notify"){try{
    if(!String(req.headers["content-type"]||"").toLowerCase().startsWith("application/x-www-form-urlencoded"))return send(res,415,"Unsupported");
    let raw="";for await(const chunk of req){raw+=chunk;if(raw.length>20000)return send(res,413,"Too large")}
@@ -54,8 +65,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    const updated=processPurchaseNotify(order,fields,(process.env.MYPOS_SANDBOX_API_PUBLIC_KEY||"").replace(/\\n/g,"\n"),
      process.env.MYPOS_SANDBOX_STORE_ID||"000000000000010");
    orders[orders.indexOf(order)]=updated;writeOrders(orders);
+   myposDiag("accepted");
    return send(res,200,"OK");
- }catch(e){console.error("myPOS sandbox notify rejected:",e.message);return send(res,400,"FAIL")}}
+ }catch(e){myposDiag("rejected",e.message==="Invalid signature"?"signature":e.message==="Unknown order"?"unknown_order":"validation");console.error("myPOS sandbox notify rejected:",e.message);return send(res,400,"FAIL")}}
  if(MYPOS_SANDBOX&&(req.method==="GET"||req.method==="POST")&&(u.pathname==="/mypos/return"||u.pathname==="/mypos/cancel"))
    return send(res,200,u.pathname==="/mypos/return"?"Pagamento in verifica: attendi la conferma dell'ordine.":"Pagamento annullato. Nessun ordine inviato.");
  if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});return send(res,200,{orders:readOrders().filter(isPrintable).slice(0,20)})}
