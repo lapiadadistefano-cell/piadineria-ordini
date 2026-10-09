@@ -63,3 +63,23 @@ test("real PostgreSQL: checked retry remains pending, then one claim only", {ski
   throw e;
  }
 });
+
+test("real PostgreSQL: forged LAB prefix cannot authorize review of an actual order", {skip:!url}, async()=>{
+ const ref="LAB-GUARD-"+process.pid+"-"+Date.now();
+ const store=createSandboxStore(url);
+ try{
+  await store.init();
+  const realLike={
+   id:ref,payment_reference:ref,customer_name:"Test only",
+   payment_method:"mypos",payment_status:"paid",payment_verified:true,
+   status:"print_review_required",lab_only:false,
+   simulated_payment:false,no_real_transaction:false
+  };
+  await store.insert(realLike);
+  await assert.rejects(
+   ()=>store.resolvePrintReview(ref,"retry_after_check","Operatore Test",resolvePrintReview),
+   /not eligible/
+  );
+  assert.deepEqual(await store.get(ref),realLike);
+ }finally{await store.close();}
+});
