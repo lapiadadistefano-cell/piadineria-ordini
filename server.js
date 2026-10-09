@@ -65,10 +65,16 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      const order={id:reference,status:"pending",payment_method:"mypos",payment_status:"paid",
        payment_verified:true,payment_reference:reference,total:7,created_at:new Date().toISOString()};
      await sandboxStore.insert(order);
-     const first=await sandboxStore.simulatePrintOnce(reference,simulatePrintOnce);
-     const second=await sandboxStore.simulatePrintOnce(reference,simulatePrintOnce);
-     return send(res,200,{simulationOnly:true,firstPrinted:first.printed,secondPrinted:second.printed,
-       finalStatus:second.status,noPrinterConnected:true});
+     // Concurrent requests exercise PostgreSQL row locking, not just sequential calls.
+     const attempts=await Promise.all([
+       sandboxStore.simulatePrintOnce(reference,simulatePrintOnce),
+       sandboxStore.simulatePrintOnce(reference,simulatePrintOnce)
+     ]);
+     const accepted=attempts.filter(x=>x.printed).length;
+     const rejected=attempts.filter(x=>!x.printed).length;
+     const finalOrder=await sandboxStore.get(reference);
+     return send(res,200,{simulationOnly:true,concurrent:true,accepted,rejected,
+       finalStatus:finalOrder?.status,noPrinterConnected:true});
    }catch(e){console.error("Sandbox print simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
  }
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/persistence-check"){
