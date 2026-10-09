@@ -11,6 +11,8 @@ on:
       - 'sandbox/v9-windows-recovery-offline-test.ps1'
       - 'sandbox/v9-printer-offline-preflight.ps1'
       - 'sandbox/v9-printer-offline-safety-test.ps1'
+      - 'sandbox/v9-staging-observer.ps1'
+      - 'sandbox/v9-staging-observer-offline-test.ps1'
 jobs:
   offline-test:
     runs-on: windows-latest
@@ -28,6 +30,10 @@ jobs:
         shell: pwsh
         run: |
           ./sandbox/v9-windows-recovery-offline-test.ps1
+
+      - name: Test isolated staging observer with offline fake server
+        shell: pwsh
+        run: ./sandbox/v9-staging-observer-offline-test.ps1
 
       - name: Validate printer preflight offline only
         shell: pwsh
