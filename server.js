@@ -4,7 +4,7 @@ const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
 const {createSandboxStore}=require("./lib/sandbox-postgres");
 const {runPrintLifecycleSimulation}=require("./lib/print-lifecycle-simulation");
-const {claim:claimPrintState}=require("./lib/print-recovery");
+const {claim:claimPrintState,onRestart:restartPrintState}=require("./lib/print-recovery");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
 const SANDBOX_DB_ENABLED=MYPOS_SANDBOX&&process.env.MYPOS_SANDBOX_DB_ENABLED==="true";
@@ -60,6 +60,18 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/recovery-check"){
+  if(!sandboxStore)return send(res,503,{error:"Sandbox database unavailable"});
+  try{
+    const id="SIM-REC-"+crypto.randomBytes(12).toString("hex");
+    await sandboxStore.insert({id,payment_reference:id,status:"pending",payment_method:"mypos",payment_status:"paid",payment_verified:true});
+    const first=await sandboxStore.claimPrint(id,"sim-worker",claimPrintState);
+    const recovery=await sandboxStore.recoverPrint(id,restartPrintState);
+    const saved=await sandboxStore.get(id);
+    const repeat=await sandboxStore.claimPrint(id,"sim-worker-2",claimPrintState);
+    return send(res,200,{simulationOnly:true,claimed:first.claimed,needsReview:recovery.needsReview,savedStatus:saved.status,retryBlocked:!repeat.claimed,noPrinterConnected:true});
+  }catch(e){console.error("Recovery check:",e.message);return send(res,503,{error:"Recovery check failed"});}
+ }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/claim-simulation"){
    if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
    try {
