@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Verify LAB-001 lifecycle against disposable real PostgreSQL
         env:
           V9_INTEGRATION_DATABASE_URL: postgresql://v9lab:temporary-ci-only@localhost:5432/v9lab
