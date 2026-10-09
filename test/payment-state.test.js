@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { isPrintable, createAwaitingPayment, confirmVerifiedPayment } = require("../lib/payment-state");
+const { isPrintable, createAwaitingPayment, confirmVerifiedPayment, simulatePrintOnce } = require("../lib/payment-state");
 
 const original = { id: "TEST-001", status: "pending", total: 8 };
 test("ordinary pickup orders remain printable", () => {
@@ -38,4 +38,24 @@ test("forged payment state or unrelated status never prints", () => {
   assert.equal(isPrintable({ ...waiting, status: "pending", payment_status: "awaiting" }), false);
   assert.equal(isPrintable({ ...waiting, status: "pending", payment_status: "paid", payment_verified: false }), false);
   assert.equal(isPrintable({ ...waiting, status: "cancelled", payment_status: "paid", payment_verified: true }), false);
+});
+
+test("sandbox simulation never prints an unpaid order", () => {
+  const waiting = createAwaitingPayment(original, "SIM-UNPAID");
+  const first = simulatePrintOnce(waiting);
+  assert.equal(first.printed, false);
+  assert.deepEqual(first.order, waiting);
+});
+test("sandbox simulation prints a verified payment exactly once", () => {
+  const waiting = createAwaitingPayment(original, "SIM-PAID");
+  const confirmation = { signatureValid: true, reference: "SIM-PAID", currency: "EUR", amountCents: 800, success: true };
+  const paid = confirmVerifiedPayment(waiting, confirmation);
+  const first = simulatePrintOnce(paid);
+  assert.equal(first.printed, true);
+  assert.equal(first.order.status, "printed");
+  const second = simulatePrintOnce(first.order);
+  assert.equal(second.printed, false);
+  assert.deepEqual(second.order, first.order);
+  const duplicateCallback = confirmVerifiedPayment(first.order, confirmation);
+  assert.equal(simulatePrintOnce(duplicateCallback).printed, false);
 });
