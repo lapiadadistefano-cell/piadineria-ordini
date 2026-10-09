@@ -10,6 +10,7 @@ on:
       - 'sandbox/v9-readonly-check-offline-test.ps1'
       - 'sandbox/v9-windows-recovery-offline-test.ps1'
       - 'sandbox/v9-printer-offline-preflight.ps1'
+      - 'sandbox/v9-printer-offline-safety-test.ps1'
 jobs:
   offline-test:
     runs-on: windows-latest
@@ -31,3 +32,7 @@ jobs:
       - name: Validate printer preflight offline only
         shell: pwsh
         run: ./sandbox/v9-printer-offline-preflight.ps1 -LabOnly
+
+      - name: Refuse real printer addresses and unsafe offline starts
+        shell: pwsh
+        run: ./sandbox/v9-printer-offline-safety-test.ps1
