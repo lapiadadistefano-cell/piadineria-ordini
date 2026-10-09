@@ -6,6 +6,7 @@ const {createSandboxStore}=require("./lib/sandbox-postgres");
 const {runPrintLifecycleSimulation}=require("./lib/print-lifecycle-simulation");
 const {claim:claimPrintState,onRestart:restartPrintState}=require("./lib/print-recovery");
 const {isAuthorizedLabRequest}=require("./lib/v9-lab-auth");
+const {resolvePrintReview}=require("./lib/print-review");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
 const SANDBOX_DB_ENABLED=MYPOS_SANDBOX&&process.env.MYPOS_SANDBOX_DB_ENABLED==="true";
@@ -34,6 +35,25 @@ function officialItems(items){if(!Array.isArray(items)||!items.length||items.len
 function fingerprint(b,items,rp){return crypto.createHash("sha256").update(JSON.stringify({d:rp.date,n:cleanText(b.customer_name,80).toLowerCase(),p:String(b.phone).replace(/\D/g,""),t:b.pickup_time,i:items.map(x=>[x.name,x.qty,x.changes])})).digest("hex")}
 const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host}`);
  if(req.method==="POST"&&u.pathname==="/api/orders"){if(STAGING_DISABLE_BRIDGE)return send(res,403,{error:"Sito di prova: gli ordini reali sono disabilitati"});try{const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);if(name.length<2)return send(res,400,{error:"Inserisci un nome valido"});if(!validPhone(phone))return send(res,400,{error:"Inserisci un numero di telefono valido"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}const orders=readOrders(),now=new Date(),rp=romeParts(now),fp=fingerprint(b,items,rp),duplicate=orders.find(o=>o.fingerprint===fp&&Date.now()-new Date(o.created_at).getTime()<120000);if(duplicate)return send(res,200,{ok:true,duplicate:true,order:duplicate});const id=nextId(orders),total=items.reduce((s,x)=>s+x.price*x.qty,0),order={id,pickup_time:b.pickup_time,customer_name:name,phone,items,notes:cleanText(b.notes,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")};orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,400,{error:e.message==="too_big"?"Ordine troppo grande":"Richiesta non valida"})}}
+ if(req.method==="POST"&&u.pathname==="/api/v9-lab/resolve-review"){
+   if(!MYPOS_SANDBOX||!sandboxStore)return send(res,404,{error:"Not available"});
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
+   try{
+     const body=await jsonBody(req);
+     if(typeof body.reference!=="string"||!/^LAB-[A-Za-z0-9-]{1,80}$/.test(body.reference)||
+       !["confirm_printed","retry_after_check"].includes(body.action)||
+       typeof body.reviewer!=="string"||!/^[A-Za-zÀ-ÿ0-9 .'-]{2,60}$/.test(body.reviewer.trim()))
+       return send(res,400,{error:"Invalid review request"});
+     const outcome=await sandboxStore.resolvePrintReview(body.reference,body.action,body.reviewer.trim(),resolvePrintReview);
+     return send(res,200,{labOnly:true,noPrinterConnected:true,...outcome});
+   }catch(e){
+     if(e.message==="too_big"||e.message==="json")return send(res,400,{error:"Invalid JSON"});
+     if(e.message==="Unknown lab order"||e.message==="Lab order not eligible for review"||e.message==="Lab reference required")
+       return send(res,409,{error:"Lab order unavailable for review"});
+     console.error("V9 sandbox review failed:",e.message);
+     return send(res,503,{error:"Review unavailable"});
+   }
+ }
  if(req.method==="GET"&&u.pathname==="/api/v9-lab/status"){
    if(!MYPOS_SANDBOX||!sandboxStore)return send(res,404,{error:"Not available"});
    if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
