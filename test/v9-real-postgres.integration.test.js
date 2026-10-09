@@ -29,3 +29,37 @@ test("real PostgreSQL: LAB fixture, durable review, duplicate denial, and isolat
   // Do not delete data from persistent environments.
  }
 });
+
+test("real PostgreSQL: checked retry remains pending, then one claim only", {skip:!url}, async()=>{
+ const {claim}=require("../lib/print-recovery");
+ const ref="LAB-RETRY-"+process.pid+"-"+Date.now();
+ const store=createSandboxStore(url);
+ try{
+  await store.init();
+  assert.equal((await store.createLabReview(ref)).created,true);
+  const reviewed=await store.resolvePrintReview(ref,"retry_after_check","Operatore Test",resolvePrintReview);
+  assert.equal(reviewed.status,"pending");
+  const saved=await store.get(ref);
+  assert.equal(saved.print_review.action,"retry_after_check");
+  assert.equal(saved.print_review.reviewer,"Operatore Test");
+  assert.equal(saved.print_claim,null);
+  assert.equal(saved.status,"pending");
+  await assert.rejects(()=>store.resolvePrintReview(ref,"retry_after_check","Operatore Test",resolvePrintReview),/not eligible/);
+  const first=await store.claimPrint(ref,"worker-test-token",claim);
+  assert.equal(first.claimed,true);
+  const duplicate=await store.claimPrint(ref,"worker-other-token",claim);
+  assert.equal(duplicate.claimed,false);
+  assert.equal((await store.get(ref)).status,"printing");
+  await store.close();
+  const reopened=createSandboxStore(url);
+  try{
+   const persisted=await reopened.get(ref);
+   assert.equal(persisted.status,"printing");
+   assert.equal(persisted.print_review.action,"retry_after_check");
+  }finally{await reopened.close();}
+ }catch(e){
+  // Ensure failed assertions never leave an open pool in CI.
+  try{await store.close();}catch{}
+  throw e;
+ }
+});
