@@ -5,7 +5,7 @@ const Module=require("node:module");
 const {resolvePrintReview}=require("../lib/print-review");
 test("sandbox manual review is persisted atomically and cannot be repeated",async()=>{
  const ref="LAB-REVIEW-001";
- let saved={payment_reference:ref,status:"print_review_required",payment_method:"mypos",payment_status:"paid",payment_verified:true};
+ let saved={payment_reference:ref,status:"print_review_required",lab_only:true,simulated_payment:true,no_real_transaction:true,payment_method:"mypos",payment_status:"paid",payment_verified:true};
  let commits=0,rollbacks=0;
  class FakePool{
   async connect(){return {query:async(sql,args=[])=>{
