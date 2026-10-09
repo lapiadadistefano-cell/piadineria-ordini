@@ -1,0 +1,17 @@
+name: V9 Offline PowerShell Lab
+on:
+  workflow_dispatch:
+  push:
+    branches: [test-mypos-sandbox]
+    paths:
+      - 'sandbox/v9-bridge-offline-lab.ps1'
+      - '.github/workflows/v9-offline-lab.yml'
+jobs:
+  offline-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated offline bridge decision simulation
+        shell: pwsh
+        run: |
+          ./sandbox/v9-bridge-offline-lab.ps1
