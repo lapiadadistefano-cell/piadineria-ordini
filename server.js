@@ -2,7 +2,8 @@ const http=require("http"),fs=require("fs"),path=require("path"),crypto=require(
 const {isPrintable,createAwaitingPayment}=require("./lib/payment-state");
 const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
-const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true";
+const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
+const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
 const PORT=process.env.PORT||8080,BRIDGE_KEY=process.env.BRIDGE_KEY||"CAMBIA-QUESTA-CHIAVE",DATA=process.env.DATA_DIR||path.join(__dirname,"data"),ORDERS=path.join(DATA,"orders.json"),PUB=path.join(__dirname,"public"),MENU=path.join(PUB,"menu.json");
 fs.mkdirSync(DATA,{recursive:true});if(!fs.existsSync(ORDERS))fs.writeFileSync(ORDERS,"[]");
 const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ORDERS,"utf8"))}catch{return[]}},writeOrders=x=>fs.writeFileSync(ORDERS,JSON.stringify(x,null,2)),readMenu=()=>{try{return JSON.parse(fs.readFileSync(MENU,"utf8"))}catch{return[]}};
@@ -10,7 +11,7 @@ function send(res,status,obj,headers={}){const body=typeof obj==="string"?obj:JS
 function jsonBody(req){return new Promise((resolve,reject)=>{let b="",tooBig=false;req.on("data",c=>{b+=c;if(b.length>100000){tooBig=true;req.destroy()}});req.on("end",()=>{if(tooBig)return reject(Error("too_big"));try{resolve(JSON.parse(b||"{}"))}catch{reject(Error("json"))}});req.on("error",reject)})}
 function romeParts(d=new Date()){const p=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(d).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return{weekday:p.weekday,date:`${p.year}-${p.month}-${p.day}`,ymd:`${p.year}${p.month}${p.day}`,minutes:+p.hour*60+ +p.minute,time:`${p.hour}:${p.minute}`}}
 function nextId(orders){const r=romeParts(),nums=orders.filter(o=>o.id?.startsWith(r.ymd+"-")).map(o=>Number(o.id.split("-")[1])||0);return`${r.ymd}-${String((nums.length?Math.max(...nums):0)+1).padStart(3,"0")}`}
-const isBridge=req=>req.headers["x-api-key"]===BRIDGE_KEY;
+const isBridge=req=>!STAGING_DISABLE_BRIDGE&&req.headers["x-api-key"]===BRIDGE_KEY;
 function pickupMinutes(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s||""))return null;const[h,m]=s.split(":").map(Number);return h*60+m}
 function validatePickup(s){const r=romeParts(),pm=pickupMinutes(s);if(r.weekday==="Sun")return"La domenica siamo chiusi";if(pm===null)return"Orario di ritiro non valido";if(!((pm>=690&&pm<=840)||(pm>=1050&&pm<=1200))||pm%10!==0)return"Orario di ritiro non disponibile";if(pm<r.minutes+20)return"Scegli un orario di ritiro con almeno 20 minuti di anticipo";return null}
 function cleanText(v,max){return String(v||"").replace(/[\u0000-\u001F\u007F]/g," ").replace(/\s+/g," ").trim().slice(0,max)}
