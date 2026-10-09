@@ -4,6 +4,7 @@ const {buildSandboxCheckout}=require("./lib/mypos-checkout");
 const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
 const {createSandboxStore}=require("./lib/sandbox-postgres");
 const {runPrintLifecycleSimulation}=require("./lib/print-lifecycle-simulation");
+const {claim:claimPrintState}=require("./lib/print-recovery");
 const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true" && process.env.MYPOS_STAGING_ONLY==="true";
 const STAGING_DISABLE_BRIDGE=process.env.MYPOS_STAGING_ONLY==="true";
 const SANDBOX_DB_ENABLED=MYPOS_SANDBOX&&process.env.MYPOS_SANDBOX_DB_ENABLED==="true";
@@ -59,6 +60,23 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    else {orders.push(order);writeOrders(orders)}
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/claim-simulation"){
+   if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
+   try {
+     const reference="SIM-CLAIM-"+crypto.randomBytes(12).toString("hex");
+     await sandboxStore.insert({id:reference,payment_reference:reference,status:"pending",
+       payment_method:"mypos",payment_status:"paid",payment_verified:true,total:7,
+       created_at:new Date().toISOString()});
+     const attempts=await Promise.all([
+       sandboxStore.claimPrint(reference,"worker-A",claimPrintState),
+       sandboxStore.claimPrint(reference,"worker-B",claimPrintState)
+     ]);
+     const saved=await sandboxStore.get(reference);
+     return send(res,200,{simulationOnly:true,attempts:attempts.length,
+       accepted:attempts.filter(x=>x.claimed).length,rejected:attempts.filter(x=>!x.claimed).length,
+       savedStatus:saved?.status,noPrinterConnected:true});
+   }catch(e){console.error("Sandbox claim simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
+ }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/lifecycle-simulation"){
    try{return send(res,200,runPrintLifecycleSimulation())}
    catch(e){console.error("Lifecycle simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
