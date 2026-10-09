@@ -68,6 +68,24 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      return send(res,503,{error:"Review unavailable"});
    }
  }
+ if(req.method==="GET"&&u.pathname==="/api/v9-lab/fixture-order"){
+   if(!MYPOS_SANDBOX||!sandboxStore)return send(res,404,{error:"Not available"});
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
+   try{
+     // Fixed synthetic fixture only: no customer records or arbitrary references.
+     const order=await sandboxStore.get("LAB-001");
+     if(!order||order.payment_reference!=="LAB-001"||order.lab_only!==true||
+        order.simulated_payment!==true||order.no_real_transaction!==true)
+       return send(res,404,{error:"Lab fixture unavailable"});
+     return send(res,200,{labOnly:true,readOnly:true,printerConnected:false,
+       order:{payment_reference:"LAB-001",lab_only:true,simulated_payment:true,
+         no_real_transaction:true,payment_verified:order.payment_verified===true,
+         payment_status:order.payment_status,status:order.status,
+         customer_name:"Cliente fittizio",
+         items:[{name:"Piadina di prova",qty:1,price:8}]}});
+   }catch(e){console.error("V9 lab fixture read unavailable:",e.message);
+     return send(res,503,{error:"Unavailable"});}
+ }
  if(req.method==="GET"&&u.pathname==="/api/v9-lab/status"){
    if(!MYPOS_SANDBOX||!sandboxStore)return send(res,404,{error:"Not available"});
    if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
