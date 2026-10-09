@@ -1,5 +1,8 @@
 const http=require("http"),fs=require("fs"),path=require("path"),crypto=require("crypto");
-const {isPrintable}=require("./lib/payment-state");
+const {isPrintable,createAwaitingPayment}=require("./lib/payment-state");
+const {buildSandboxCheckout}=require("./lib/mypos-checkout");
+const {parseNotification,processPurchaseNotify}=require("./lib/mypos-notify");
+const MYPOS_SANDBOX=process.env.MYPOS_SANDBOX_ENABLED==="true";
 const PORT=process.env.PORT||8080,BRIDGE_KEY=process.env.BRIDGE_KEY||"CAMBIA-QUESTA-CHIAVE",DATA=process.env.DATA_DIR||path.join(__dirname,"data"),ORDERS=path.join(DATA,"orders.json"),PUB=path.join(__dirname,"public"),MENU=path.join(PUB,"menu.json");
 fs.mkdirSync(DATA,{recursive:true});if(!fs.existsSync(ORDERS))fs.writeFileSync(ORDERS,"[]");
 const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ORDERS,"utf8"))}catch{return[]}},writeOrders=x=>fs.writeFileSync(ORDERS,JSON.stringify(x,null,2)),readMenu=()=>{try{return JSON.parse(fs.readFileSync(MENU,"utf8"))}catch{return[]}};
@@ -16,6 +19,33 @@ function officialItems(items){if(!Array.isArray(items)||!items.length||items.len
 function fingerprint(b,items,rp){return crypto.createHash("sha256").update(JSON.stringify({d:rp.date,n:cleanText(b.customer_name,80).toLowerCase(),p:String(b.phone).replace(/\D/g,""),t:b.pickup_time,i:items.map(x=>[x.name,x.qty,x.changes])})).digest("hex")}
 const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host}`);
  if(req.method==="POST"&&u.pathname==="/api/orders"){try{const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);if(name.length<2)return send(res,400,{error:"Inserisci un nome valido"});if(!validPhone(phone))return send(res,400,{error:"Inserisci un numero di telefono valido"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}const orders=readOrders(),now=new Date(),rp=romeParts(now),fp=fingerprint(b,items,rp),duplicate=orders.find(o=>o.fingerprint===fp&&Date.now()-new Date(o.created_at).getTime()<120000);if(duplicate)return send(res,200,{ok:true,duplicate:true,order:duplicate});const id=nextId(orders),total=items.reduce((s,x)=>s+x.price*x.qty,0),order={id,pickup_time:b.pickup_time,customer_name:name,phone,items,notes:cleanText(b.notes,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")};orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,400,{error:e.message==="too_big"?"Ordine troppo grande":"Richiesta non valida"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/create"){try{
+   const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);
+   if(name.length<2||!validPhone(phone))return send(res,400,{error:"Dati cliente non validi"});
+   const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});
+   const items=officialItems(b.items),orders=readOrders(),now=new Date(),rp=romeParts(now);
+   const total=Number(items.reduce((sum,item)=>sum+item.price*item.qty,0).toFixed(2));
+   const id=nextId(orders),reference="SBX-"+id+"-"+crypto.randomBytes(6).toString("hex");
+   const order=createAwaitingPayment({id,pickup_time:b.pickup_time,customer_name:name,phone,items,
+     notes:cleanText(b.notes,300),total,received_at:rp.time,local_date:rp.date,
+     created_at:now.toISOString(),print_token:crypto.randomBytes(12).toString("hex"),status:"pending"},reference);
+   const checkout=buildSandboxCheckout({order,baseUrl:process.env.MYPOS_PUBLIC_BASE_URL,
+     privateKey:(process.env.MYPOS_SANDBOX_PRIVATE_KEY||"").replace(/\\n/g,"\n")});
+   orders.push(order);writeOrders(orders);
+   return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
+ }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
+ if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/notify"){try{
+   if(!String(req.headers["content-type"]||"").toLowerCase().startsWith("application/x-www-form-urlencoded"))return send(res,415,"Unsupported");
+   let raw="";for await(const chunk of req){raw+=chunk;if(raw.length>20000)return send(res,413,"Too large")}
+   const fields=parseNotification(raw),orders=readOrders(),order=orders.find(o=>o.payment_reference===fields.OrderID);
+   if(!order)return send(res,404,"Unknown order");
+   const updated=processPurchaseNotify(order,fields,(process.env.MYPOS_SANDBOX_API_PUBLIC_KEY||"").replace(/\\n/g,"\n"),
+     process.env.MYPOS_SANDBOX_STORE_ID||"000000000000010");
+   orders[orders.indexOf(order)]=updated;writeOrders(orders);
+   return send(res,200,"OK");
+ }catch(e){console.error("myPOS sandbox notify rejected:",e.message);return send(res,400,"FAIL")}}
+ if(MYPOS_SANDBOX&&req.method==="GET"&&(u.pathname==="/mypos/return"||u.pathname==="/mypos/cancel"))
+   return send(res,200,u.pathname==="/mypos/return"?"Pagamento in verifica: attendi la conferma dell'ordine.":"Pagamento annullato. Nessun ordine inviato.");
  if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});return send(res,200,{orders:readOrders().filter(isPrintable).slice(0,20)})}
  if(req.method==="POST"&&u.pathname.startsWith("/api/bridge/orders/")&&u.pathname.endsWith("/printed")){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});const id=decodeURIComponent(u.pathname.split("/")[4]),orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return send(res,404,{error:"Ordine non trovato"});if(!isPrintable(o))return send(res,409,{error:"Ordine non autorizzato alla stampa"});o.status="printed";o.printed_at=new Date().toISOString();writeOrders(orders);return send(res,200,{ok:true})}
  if(req.method==="GET"&&u.pathname==="/api/health")return send(res,200,{ok:true,time:romeParts().time});let file=u.pathname==="/"?"index.html":u.pathname.replace(/^\/+/,""),fp=path.resolve(PUB,file);if(!fp.startsWith(path.resolve(PUB)+path.sep)&&fp!==path.resolve(PUB,"index.html"))return send(res,404,"Not found");if(!fs.existsSync(fp)||fs.statSync(fp).isDirectory())return send(res,404,"Not found");const ext=path.extname(fp),ct={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8"}[ext]||"application/octet-stream";res.writeHead(200,{"Content-Type":ct,"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});fs.createReadStream(fp).pipe(res)});
