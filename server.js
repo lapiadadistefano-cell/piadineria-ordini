@@ -43,7 +43,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      const pickupError=validatePickup(b.pickup_time);
      if(pickupError)return send(res,400,{error:pickupError});
      const items=officialItems(b.items),now=new Date(),rp=romeParts(now);
-     const fp=fingerprint(b,items,rp);
+     const fp=crypto.createHash("sha256").update("mypos:"+fingerprint(b,items,rp)).digest("hex");
      const total=Number(items.reduce((sum,item)=>sum+item.price*item.qty,0).toFixed(2));
      const makeOrder=orders=>{
        const id=nextId(orders);
