@@ -13,7 +13,7 @@ test("V9 offline queue creates one binary ticket and preserves notes",()=>{
 test("verified myPOS and cash print, unverified orders do not",()=>{
  const jobs=prepareTickets([
   {...base,id:"CASH",payment_method:"cash"},
-  {...base,id:"MYPOS",payment_method:"mypos",payment_status:"paid",payment_verified:true},
+  {...base,id:"MYPOS",print_token:"mypos-token",payment_method:"mypos",payment_status:"paid",payment_verified:true},
   {...base,id:"WAIT",payment_method:"mypos",payment_status:"awaiting",payment_verified:false},
   {...base,id:"UNKNOWN",payment_method:"other"}
  ]);
