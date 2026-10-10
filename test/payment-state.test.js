@@ -3,9 +3,18 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { isPrintable, createAwaitingPayment, confirmVerifiedPayment, simulatePrintOnce } = require("../lib/payment-state");
 
-const original = { id: "TEST-001", status: "pending", total: 8 };
-test("ordinary pickup orders remain printable", () => {
+const original = { id: "TEST-001", status: "pending", total: 8, payment_method: "cash" };
+test("ordinary cash pickup orders remain printable", () => {
   assert.equal(isPrintable(original), true);
+});
+test("missing, unknown, or contradictory payment methods never enter print queue", () => {
+  assert.equal(isPrintable({...original,payment_method:undefined}), false);
+  assert.equal(isPrintable({...original,payment_method:"card"}), false);
+  assert.equal(isPrintable({...original,payment_method:"bank_transfer"}), false);
+  assert.equal(isPrintable({...original,payment_method:"CASH"}), false);
+  assert.equal(isPrintable({...original,payment_verified:true}), false);
+  assert.equal(isPrintable({...original,payment_status:"paid"}), false);
+  assert.equal(isPrintable({...original,payment_method:"mypos",payment_status:"paid",payment_verified:false}), false);
 });
 test("myPOS orders cannot print until server-verified confirmation", () => {
   const waiting = createAwaitingPayment(original, "CHECKOUT-001");
@@ -20,7 +29,6 @@ test("myPOS orders cannot print until server-verified confirmation", () => {
   assert.equal(isPrintable(paid), true);
   assert.deepEqual(confirmVerifiedPayment(paid, valid), paid);
 });
-
 test("verified paid orders print once and never become printable again", () => {
   const waiting = createAwaitingPayment(original, "CHECKOUT-PRINT-001");
   const valid = { signatureValid: true, reference: "CHECKOUT-PRINT-001", currency: "EUR", amountCents: 800, success: true };
@@ -32,14 +40,12 @@ test("verified paid orders print once and never become printable again", () => {
   assert.deepEqual(confirmVerifiedPayment(printed, valid), printed, "duplicate signed notification cannot requeue a printed order");
   assert.equal(isPrintable(confirmVerifiedPayment(printed, valid)), false);
 });
-
 test("forged payment state or unrelated status never prints", () => {
   const waiting = createAwaitingPayment(original, "CHECKOUT-PRINT-002");
   assert.equal(isPrintable({ ...waiting, status: "pending", payment_status: "awaiting" }), false);
   assert.equal(isPrintable({ ...waiting, status: "pending", payment_status: "paid", payment_verified: false }), false);
   assert.equal(isPrintable({ ...waiting, status: "cancelled", payment_status: "paid", payment_verified: true }), false);
 });
-
 test("sandbox simulation never prints an unpaid order", () => {
   const waiting = createAwaitingPayment(original, "SIM-UNPAID");
   const first = simulatePrintOnce(waiting);
