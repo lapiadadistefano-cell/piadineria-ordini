@@ -40,7 +40,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    if(u.pathname==="/api/admin/status"&&req.method==="POST"){
      if(req.headers["x-admin-action"]!=="change-status")return send(res,403,{error:"Richiesta non autorizzata"});
      const origin=req.headers.origin;const host=req.headers["x-forwarded-host"]||req.headers.host;
-     if(!origin||!host||new URL(origin).host!==host)return send(res,403,{error:"Origine non autorizzata"});
+     let originHost;try{originHost=new URL(origin).host}catch{return send(res,403,{error:"Origine non valida"})}if(!origin||!host||originHost!==host)return send(res,403,{error:"Origine non autorizzata"});
      if(!adminReady)return send(res,503,{error:"Gestione non disponibile"});
      try{const b=await jsonBody(req);if(typeof b.closed!=="boolean")return send(res,400,{error:"Valore non valido"});await adminControl.setOrdersClosed(b.closed);return send(res,200,{closed:await ordersClosed()},{"Cache-Control":"no-store"})}catch{return send(res,503,{error:"Impossibile salvare lo stato"})}
    }
