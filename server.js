@@ -75,7 +75,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      const fields=parseNotification(body);
      const verified=validatePaymentNotification(fields,MYPosPackage);
      const result=await productionDb.settleVerifiedPayment(verified.reference,verified.transactionRef,verified.amountCents);
-     return send(res,200,{ok:true,duplicate:result.duplicate});
+     return send(res,200,"OK");
    }catch(e){console.error("myPOS notification rejected:",e.message);return send(res,400,{error:"Invalid payment notification"});}
  }
  if(req.method==="GET"&&u.pathname==="/api/bridge/orders"){if(!isBridge(req))return send(res,401,{error:"Non autorizzato"});if(USE_DATABASE&&!dbReady)return send(res,503,{error:"Archivio ordini non disponibile"});const pending=USE_DATABASE?await productionDb.pendingOrders():readOrders();return send(res,200,{orders:pending.filter(o=>o.status==="pending"&&(o.payment_method==null||(o.payment_method==="cash"&&o.payment_verified!==true&&(!o.payment_status||o.payment_status==="unpaid"))||(o.payment_method==="mypos"&&o.payment_status==="paid"&&o.payment_verified===true))).slice(0,20)})}
