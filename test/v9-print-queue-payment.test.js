@@ -33,3 +33,12 @@ test("claimed and interrupted orders cannot re-enter queue",()=>{
  assert.equal(toPrintQueue([printing]).length,0);
  assert.equal(toPrintQueue([onRestart(printing).order]).length,0);
 });
+
+test("worker cannot claim an order with missing or invalid claim token",()=>{
+ const order={...base,payment_method:"mypos",payment_status:"paid",payment_verified:true};
+ for(const token of [""," ",null,42]){
+  const result=claim(order,token);
+  assert.equal(result.claimed,false);
+  assert.equal(result.order.status,"pending");
+ }
+});
