@@ -21,9 +21,10 @@
     <h1>La Piada di Stefano</h1>
     <p class="sub">Pannello amministratore</p>
     <div class="status"><strong>Stato ordini:</strong> <span id="state">Caricamento...</span></div>
+    <p id="message" role="status" aria-live="polite"></p>
     <button class="open" type="button" id="open" disabled>APRI ORDINI</button>
     <button class="close" type="button" id="close" disabled>CHIUDI ORDINI</button>
-    <p class="note">Anteprima non operativa. Nessun comando viene inviato al sistema ordini. L'accesso protetto sarà aggiunto prima dell'attivazione.</p>
+    <p class="note">Pannello riservato all’amministratore. Le modifiche si applicano al servizio collegato.</p>
   </section></main>
 <script>
 const state=document.getElementById('state'),msg=document.getElementById('message'),open=document.getElementById('open'),close=document.getElementById('close');
