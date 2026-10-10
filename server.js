@@ -15,7 +15,7 @@ function send(res,status,obj,headers={}){const body=typeof obj==="string"?obj:JS
 function jsonBody(req){return new Promise((resolve,reject)=>{let b="",tooBig=false;req.on("data",c=>{b+=c;if(b.length>100000){tooBig=true;req.destroy()}});req.on("end",()=>{if(tooBig)return reject(Error("too_big"));try{resolve(JSON.parse(b||"{}"))}catch{reject(Error("json"))}});req.on("error",reject)})}
 function romeParts(d=new Date()){const p=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(d).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return{weekday:p.weekday,date:`${p.year}-${p.month}-${p.day}`,ymd:`${p.year}${p.month}${p.day}`,minutes:+p.hour*60+ +p.minute,time:`${p.hour}:${p.minute}`}}
 function nextId(orders){const r=romeParts(),nums=orders.filter(o=>o.id?.startsWith(r.ymd+"-")).map(o=>Number(o.id.split("-")[1])||0);return`${r.ymd}-${String((nums.length?Math.max(...nums):0)+1).padStart(3,"0")}`}
-const isBridge=req=>req.headers["x-api-key"]===BRIDGE_KEY;
+const isBridge=req=>process.env.ORDERS_DB_TABLE!=="v9_trial_pickup_orders" && Boolean(process.env.BRIDGE_KEY) && req.headers["x-api-key"]===BRIDGE_KEY;
 function pickupMinutes(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s||""))return null;const[h,m]=s.split(":").map(Number);return h*60+m}
 function validatePickup(s){const r=romeParts(),pm=pickupMinutes(s);if(r.weekday==="Sun")return"La domenica siamo chiusi";if(pm===null)return"Orario di ritiro non valido";if(!((pm>=690&&pm<=840)||(pm>=1050&&pm<=1200))||pm%10!==0)return"Orario di ritiro non disponibile";if(pm<r.minutes+20)return"Scegli un orario di ritiro con almeno 20 minuti di anticipo";return null}
 function cleanText(v,max){return String(v||"").replace(/[\u0000-\u001F\u007F]/g," ").replace(/\s+/g," ").trim().slice(0,max)}
@@ -56,7 +56,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      const created=await productionDb.createOrder(makeOrder,fp);
      if(created.order.payment_method!=="mypos"||created.order.payment_status!=="awaiting")
        return send(res,409,{error:"Ordine già presente con diversa modalità di pagamento"});
-     const checkout=buildLiveCheckout(created.order,"https://la-piada-di-stefano-ordini.onrender.com",MYPosPackage);
+     const checkout=buildLiveCheckout(created.order,process.env.MYPOS_PUBLIC_ORIGIN||"https://la-piada-di-stefano-ordini.onrender.com",MYPosPackage);
      return send(res,created.duplicate?200:201,{ok:true,duplicate:created.duplicate,
        order:{id:created.order.id,total:created.order.total,pickup_time:created.order.pickup_time},checkout},{"Cache-Control":"no-store"});
    }catch(e){
