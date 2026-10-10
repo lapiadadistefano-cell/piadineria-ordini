@@ -31,7 +31,13 @@ test("duplicate IDs in the same V9 batch are rejected before generating tickets"
 });
 test("distinct V9 order IDs produce separate offline tickets",()=>{
  const cash={...base,payment_method:"cash",payment_status:"unpaid",payment_verified:false};
- const jobs=prepareTickets([cash,{...cash,id:"LAB-02"}]);
+ const jobs=prepareTickets([cash,{...cash,id:"LAB-02",print_token:"lab-token-2"}]);
  assert.equal(jobs.length,2);
  assert.notDeepEqual(jobs[0].bytes,jobs[1].bytes);
+});
+
+test("V9 requires unique nonempty print tokens for different orders",()=>{
+ const cash={...base,payment_method:"cash",payment_status:"unpaid",payment_verified:false};
+ assert.throws(()=>prepareTickets([cash,{...cash,id:"LAB-02"}]),/duplicate print token/);
+ assert.throws(()=>prepareTickets([{...cash,print_token:""}]),/Missing or duplicate print token/);
 });
