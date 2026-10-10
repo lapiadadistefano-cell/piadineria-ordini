@@ -74,3 +74,11 @@ test("checkout cannot reopen printing, printed, cancelled or review orders",()=>
  for(const paid of [{payment_status:"paid"},{payment_verified:true}])assert.throws(()=>createAwaitingPayment({...original,...paid},"CHECKOUT-NEW"),/Invalid payment order/);
  for(const total of [-1,NaN,Infinity])assert.throws(()=>createAwaitingPayment({...original,total},"CHECKOUT-NEW"),/Invalid payment order/);
 });
+
+test("cash orders with contradictory or unknown payment states are held",()=>{
+ for(const payment_status of ["awaiting","failed","refunded","paid","unknown"]){
+  assert.equal(isPrintable({...original,payment_status}),false,payment_status);
+ }
+ assert.equal(isPrintable({...original,payment_status:"unpaid",payment_verified:false}),true);
+ assert.equal(isPrintable({...original,payment_status:"unpaid",payment_verified:"yes"}),false);
+});
