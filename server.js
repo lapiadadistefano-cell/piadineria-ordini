@@ -6,7 +6,7 @@ let adminReady=false;
 if(process.env.DATABASE_URL)adminControl.initializeAdmin().then(()=>{adminReady=true}).catch(e=>console.error("Admin initialization failed:",e.message));
 function adminAuthorized(req){if(!ADMIN_PASSWORD)return false;const auth=req.headers.authorization||"";if(!auth.startsWith("Basic "))return false;let raw;try{raw=Buffer.from(auth.slice(6),"base64").toString("utf8")}catch{return false}const i=raw.indexOf(":");if(i<0||raw.slice(0,i)!=="admin")return false;const candidate=Buffer.from(raw.slice(i+1));const expected=Buffer.from(ADMIN_PASSWORD);return candidate.length===expected.length&&crypto.timingSafeEqual(candidate,expected)}
 function adminChallenge(res){return send(res,401,{error:"Accesso amministratore richiesto"},{"WWW-Authenticate":'Basic realm="La Piada di Stefano - Amministrazione"',"Cache-Control":"no-store"})}
-async function ordersClosed(){if(ORDERS_CLOSED)return true;if(!adminReady)return false;return adminControl.getOrdersClosed()}
+async function ordersClosed(){if(ORDERS_CLOSED)return true;if(!adminReady)return true;try{return await adminControl.getOrdersClosed()}catch(e){console.error("Admin status unavailable; orders closed for safety:",e.message);return true}}
 const {validatePaymentNotification,parseNotification}=require("./lib/mypos-production-notify");
 const {buildLiveCheckout}=require("./lib/mypos-live-checkout");
 const {loadMyposConfigurationPackage}=require("./lib/mypos-config-package");
