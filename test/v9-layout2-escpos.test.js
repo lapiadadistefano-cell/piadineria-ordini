@@ -37,3 +37,12 @@ test("Italian accented customer and ingredient text is encoded without replaceme
 test("unsupported glyphs fail closed before physical printing",()=>{
  assert.throws(()=>encodeTicket({...paid,customer_name:"CLIENTE 😀"}),/Unsupported ticket characters/);
 });
+
+test("missing mandatory ticket fields fail before encoding",()=>{
+ for(const order of [
+  {...paid,id:""},
+  {...paid,pickup_time:""},
+  {...paid,customer_name:""},
+  {...paid,items:[{qty:1,name:""}]}
+ ])assert.throws(()=>encodeTicket(order));
+});
