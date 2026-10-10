@@ -82,3 +82,11 @@ test("cash orders with contradictory or unknown payment states are held",()=>{
  assert.equal(isPrintable({...original,payment_status:"unpaid",payment_verified:false}),true);
  assert.equal(isPrintable({...original,payment_status:"unpaid",payment_verified:"yes"}),false);
 });
+
+test("checkout rejects ambiguous payment states before creating a myPOS session",()=>{
+ for(const payment_status of ["awaiting","failed","refunded","unknown"]){
+  assert.throws(()=>createAwaitingPayment({...original,payment_status},"CHECKOUT-NEW"),/Invalid payment order/);
+ }
+ assert.throws(()=>createAwaitingPayment({...original,payment_verified:"true"},"CHECKOUT-NEW"),/Invalid payment order/);
+ assert.equal(createAwaitingPayment({...original,payment_status:"unpaid",payment_verified:false},"CHECKOUT-NEW").status,"awaiting_payment");
+});
