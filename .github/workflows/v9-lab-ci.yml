@@ -33,6 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
+      # The sandbox repository currently has no package-lock.json.
+      - run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
       - run: npm test
