@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>La Piada di Stefano - Amministrazione</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#f5f5f1;color:#242424;font-family:Arial,Helvetica,sans-serif}
+    main{max-width:520px;margin:50px auto;padding:22px}
+    .panel{background:white;border-radius:18px;padding:30px;box-shadow:0 8px 30px #00000012}
+    h1{margin:0 0 6px;font-size:28px}p{line-height:1.5}
+    .sub{color:#666;margin:0 0 28px}.status{background:#f0f0f0;border-radius:10px;padding:15px;margin:20px 0}
+    button{width:100%;padding:17px;margin:8px 0;border:0;border-radius:12px;font-size:17px;font-weight:bold;color:white;cursor:pointer}
+    .open{background:#237a3d}.close{background:#b63232}
+    .note{font-size:13px;color:#666;margin-top:20px}
+  </style>
+</head>
+<body>
+  <main><section class="panel">
+    <h1>La Piada di Stefano</h1>
+    <p class="sub">Pannello amministratore</p>
+    <div class="status"><strong>Stato ordini:</strong> <span id="state">Caricamento...</span></div>
+    <p id="message" role="status" aria-live="polite"></p>
+    <button class="open" type="button" id="open" disabled>APRI ORDINI</button>
+    <button class="close" type="button" id="close" disabled>CHIUDI ORDINI</button>
+    <p class="note">Pannello riservato all’amministratore. Le modifiche si applicano al servizio collegato.</p>
+  </section></main>
+<script>
+const state=document.getElementById('state'),msg=document.getElementById('message'),open=document.getElementById('open'),close=document.getElementById('close');
+async function refresh(){
+ try{const r=await fetch('/api/admin/status',{cache:'no-store'});if(!r.ok)throw Error('Stato non disponibile');const d=await r.json();state.textContent=d.closed?'CHIUSO':'APERTO';open.disabled=!d.closed;close.disabled=d.closed;msg.textContent='Stato aggiornato';}
+ catch(e){state.textContent='Non disponibile';open.disabled=true;close.disabled=true;msg.textContent=e.message;}
+}
+async function change(closed){
+ open.disabled=true;close.disabled=true;msg.textContent='Salvataggio in corso...';
+ try{const r=await fetch('/api/admin/status',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Action':'change-status'},body:JSON.stringify({closed})});if(!r.ok)throw Error('Modifica non salvata');await refresh();}
+ catch(e){msg.textContent=e.message;await refresh();}
+}
+open.addEventListener('click',()=>change(false));close.addEventListener('click',()=>change(true));refresh();
+</script></body>
+</html>
