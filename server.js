@@ -1,6 +1,7 @@
 const http=require("http"),fs=require("fs"),path=require("path"),crypto=require("crypto");
 const ORDERS_CLOSED=process.env.ORDERS_CLOSED==="true";
 const {validatePaymentNotification,parseNotification}=require("./lib/mypos-production-notify");
+const {buildLiveCheckout}=require("./lib/mypos-live-checkout");
 const MYPosPackage=process.env.MYPOS_CONFIGURATION_PACKAGE||"";
 const USE_DATABASE=Boolean(process.env.DATABASE_URL);
 const productionDb=USE_DATABASE?require("./lib/production-orders-db"):null;
@@ -23,6 +24,36 @@ function fingerprint(b,items,rp){return crypto.createHash("sha256").update(JSON.
 const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host}`);
  if(ORDERS_CLOSED&&req.method==="POST"&&u.pathname==="/api/orders")return send(res,503,{error:"Ordina e Ritira è temporaneamente chiuso per oggi. Riprova alla prossima apertura."});
  if(req.method==="POST"&&u.pathname==="/api/orders"){try{const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);if(name.length<2)return send(res,400,{error:"Inserisci un nome valido"});if(!validPhone(phone))return send(res,400,{error:"Inserisci un numero di telefono valido"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}const now=new Date(),rp=romeParts(now),fp=fingerprint(b,items,rp),total=items.reduce((s,x)=>s+x.price*x.qty,0),makeOrder=orders=>({id:nextId(orders),id,pickup_time:b.pickup_time,customer_name:name,phone,items,notes:cleanText(b.notes,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",payment_method:"cash",payment_status:"unpaid",payment_verified:false,fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")});if(USE_DATABASE){if(!dbReady)return send(res,503,{error:"Archivio ordini non disponibile"});const result=await productionDb.createOrder(makeOrder,fp);return send(res,result.duplicate?200:201,{ok:true,duplicate:result.duplicate,order:result.order})}const orders=readOrders(),duplicate=orders.find(o=>o.fingerprint===fp&&Date.now()-new Date(o.created_at).getTime()<120000);if(duplicate)return send(res,200,{ok:true,duplicate:true,order:duplicate});const order=makeOrder(orders);orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,400,{error:e.message==="too_big"?"Ordine troppo grande":"Richiesta non valida"})}}
+ if(req.method==="POST"&&u.pathname==="/api/mypos/create"){
+   if(ORDERS_CLOSED)return send(res,503,{error:"Ordina e Ritira temporaneamente chiuso"});
+   if(!USE_DATABASE||!dbReady||!MYPosPackage)return send(res,503,{error:"Pagamento online non disponibile"});
+   try{
+     const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);
+     if(name.length<2||!validPhone(phone))return send(res,400,{error:"Nome o telefono non valido"});
+     const pickupError=validatePickup(b.pickup_time);
+     if(pickupError)return send(res,400,{error:pickupError});
+     const items=officialItems(b.items),now=new Date(),rp=romeParts(now);
+     const fp=fingerprint(b,items,rp);
+     const total=Number(items.reduce((sum,item)=>sum+item.price*item.qty,0).toFixed(2));
+     const makeOrder=orders=>{
+       const id=nextId(orders);
+       return {id,pickup_time:b.pickup_time,customer_name:name,phone,items,
+         notes:cleanText(b.notes,300),total,received_at:rp.time,local_date:rp.date,
+         created_at:now.toISOString(),status:"awaiting_payment",payment_method:"mypos",
+         payment_status:"awaiting",payment_verified:false,payment_reference:id,
+         fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")};
+     };
+     const created=await productionDb.createOrder(makeOrder,fp);
+     if(created.order.payment_method!=="mypos"||created.order.payment_status!=="awaiting")
+       return send(res,409,{error:"Ordine già presente con diversa modalità di pagamento"});
+     const checkout=buildLiveCheckout(created.order,"https://la-piada-di-stefano-ordini.onrender.com",MYPosPackage);
+     return send(res,created.duplicate?200:201,{ok:true,duplicate:created.duplicate,
+       order:{id:created.order.id,total:created.order.total,pickup_time:created.order.pickup_time},checkout});
+   }catch(e){
+     console.error("myPOS checkout creation failed:",e.message);
+     return send(res,400,{error:"Impossibile avviare il pagamento"});
+   }
+ }
  if(req.method==="POST"&&u.pathname==="/api/mypos/notify"){
    if(!USE_DATABASE||!dbReady||!MYPosPackage)return send(res,503,{error:"Payments unavailable"});
    let body="";
