@@ -24,3 +24,14 @@ test("verified myPOS and cash print, unverified orders do not",()=>{
 test("invalid printable ticket aborts preparation rather than sending partial jobs",()=>{
  assert.throws(()=>prepareTickets([{...base,payment_method:"cash",items:[{name:"INVALID",qty:0}]}]));
 });
+
+test("duplicate IDs in the same V9 batch are rejected before generating tickets",()=>{
+ const cash={...base,payment_method:"cash",payment_status:"unpaid",payment_verified:false};
+ assert.throws(()=>prepareTickets([cash,{...cash,print_token:"other-token"}]),/duplicate ticket ID/);
+});
+test("distinct V9 order IDs produce separate offline tickets",()=>{
+ const cash={...base,payment_method:"cash",payment_status:"unpaid",payment_verified:false};
+ const jobs=prepareTickets([cash,{...cash,id:"LAB-02"}]);
+ assert.equal(jobs.length,2);
+ assert.notDeepEqual(jobs[0].bytes,jobs[1].bytes);
+});
