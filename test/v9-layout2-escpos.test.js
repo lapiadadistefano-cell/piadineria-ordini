@@ -46,3 +46,7 @@ test("missing mandatory ticket fields fail before encoding",()=>{
   {...paid,items:[{qty:1,name:""}]}
  ])assert.throws(()=>encodeTicket(order));
 });
+
+test("unsafe order identifiers cannot be silently changed on ticket",()=>{
+ for(const id of ["A\nB","ORD😀","À25"])assert.throws(()=>encodeTicket({...paid,id}),/Invalid ticket ID/);
+});
