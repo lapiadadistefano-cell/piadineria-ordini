@@ -49,3 +49,14 @@ test("callback rejects unsigned and misplaced signatures",()=>{
 test("checkout refuses an already paid order",()=>{
  assert.throws(()=>buildLiveCheckout({...order,status:"pending"},"https://example.com",pack),/Not payable/);
 });
+
+test("callback rejects an invalid payment method despite valid signature",()=>{
+ const fields={IPCmethod:"IPCPurchase",SID:"1495244",Amount:"8.00",Currency:"EUR",OrderID:"20261010-001",IPC_Trnref:"ref1",RequestSTAN:"stan1"};
+ fields.Signature=signCheckout(fields,privateKey);
+ assert.throws(()=>validatePaymentNotification(parseNotification(new URLSearchParams(fields).toString()),pack),/method/);
+});
+test("callback rejects zero payment despite valid signature",()=>{
+ const fields={IPCmethod:"IPCPurchaseNotify",SID:"1495244",Amount:"0.00",Currency:"EUR",OrderID:"20261010-001",IPC_Trnref:"ref1",RequestSTAN:"stan1"};
+ fields.Signature=signCheckout(fields,privateKey);
+ assert.throws(()=>validatePaymentNotification(parseNotification(new URLSearchParams(fields).toString()),pack),/amount/);
+});
