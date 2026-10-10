@@ -31,3 +31,21 @@ test("tampering with payment amount invalidates signature",()=>{
 test("duplicate callback parameters are rejected",()=>{
  assert.throws(()=>parseNotification("SID=1&SID=2&Signature=x"),/Duplicate/);
 });
+
+test("callback rejects a different store even with valid signature",()=>{
+ const fields={IPCmethod:"IPCPurchaseNotify",SID:"999999",Amount:"8.00",Currency:"EUR",OrderID:"20261010-001",IPC_Trnref:"ref1",RequestSTAN:"stan1"};
+ fields.Signature=signCheckout(fields,privateKey);
+ assert.throws(()=>validatePaymentNotification(parseNotification(new URLSearchParams(fields).toString()),pack),/store/);
+});
+test("callback rejects a different currency even with valid signature",()=>{
+ const fields={IPCmethod:"IPCPurchaseNotify",SID:"1495244",Amount:"8.00",Currency:"USD",OrderID:"20261010-001",IPC_Trnref:"ref1",RequestSTAN:"stan1"};
+ fields.Signature=signCheckout(fields,privateKey);
+ assert.throws(()=>validatePaymentNotification(parseNotification(new URLSearchParams(fields).toString()),pack),/currency/);
+});
+test("callback rejects unsigned and misplaced signatures",()=>{
+ assert.throws(()=>parseNotification("SID=1495244"),/signature/);
+ assert.throws(()=>parseNotification("Signature=x&SID=1495244"),/last/);
+});
+test("checkout refuses an already paid order",()=>{
+ assert.throws(()=>buildLiveCheckout({...order,status:"pending"},"https://example.com",pack),/Not payable/);
+});
