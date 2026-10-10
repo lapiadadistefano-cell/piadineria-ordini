@@ -65,3 +65,11 @@ test("sandbox simulation prints a verified payment exactly once", () => {
   const duplicateCallback = confirmVerifiedPayment(first.order, confirmation);
   assert.equal(simulatePrintOnce(duplicateCallback).printed, false);
 });
+
+test("checkout cannot reopen printing, printed, cancelled or review orders",()=>{
+ for(const status of ["printing","printed","cancelled","print_review_required","awaiting_payment"]){
+  assert.throws(()=>createAwaitingPayment({...original,status},"CHECKOUT-NEW"),/Invalid payment order/);
+ }
+ for(const ref of ["",null,42])assert.throws(()=>createAwaitingPayment(original,ref),/Invalid payment order/);
+ for(const total of [-1,NaN,Infinity])assert.throws(()=>createAwaitingPayment({...original,total},"CHECKOUT-NEW"),/Invalid payment order/);
+});
