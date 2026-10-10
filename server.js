@@ -58,7 +58,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
        return send(res,409,{error:"Ordine già presente con diversa modalità di pagamento"});
      const checkout=buildLiveCheckout(created.order,"https://la-piada-di-stefano-ordini.onrender.com",MYPosPackage);
      return send(res,created.duplicate?200:201,{ok:true,duplicate:created.duplicate,
-       order:{id:created.order.id,total:created.order.total,pickup_time:created.order.pickup_time},checkout});
+       order:{id:created.order.id,total:created.order.total,pickup_time:created.order.pickup_time},checkout},{"Cache-Control":"no-store"});
    }catch(e){
      console.error("myPOS checkout creation failed:",e.message);
      return send(res,400,{error:"Impossibile avviare il pagamento"});
