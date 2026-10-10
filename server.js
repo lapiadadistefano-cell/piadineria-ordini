@@ -4,6 +4,10 @@ const {validatePaymentNotification,parseNotification}=require("./lib/mypos-produ
 const {buildLiveCheckout}=require("./lib/mypos-live-checkout");
 const {loadMyposConfigurationPackage}=require("./lib/mypos-config-package");
 const MYPosPackage=process.env.MYPOS_CONFIGURATION_PACKAGE||"";
+if(process.env.ORDERS_DB_TABLE==="v9_trial_pickup_orders"){
+  try{loadMyposConfigurationPackage(MYPosPackage);console.log("V9 myPOS configuration package: valid structure and RSA keys")}
+  catch(e){console.error("V9 myPOS configuration package validation failed:",e.message)}
+}
 const USE_DATABASE=Boolean(process.env.DATABASE_URL);
 const productionDb=USE_DATABASE?require("./lib/production-orders-db"):null;
 let dbReady=!USE_DATABASE;
