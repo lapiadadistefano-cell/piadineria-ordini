@@ -71,5 +71,6 @@ test("checkout cannot reopen printing, printed, cancelled or review orders",()=>
   assert.throws(()=>createAwaitingPayment({...original,status},"CHECKOUT-NEW"),/Invalid payment order/);
  }
  for(const ref of ["",null,42])assert.throws(()=>createAwaitingPayment(original,ref),/Invalid payment order/);
+ for(const paid of [{payment_status:"paid"},{payment_verified:true}])assert.throws(()=>createAwaitingPayment({...original,...paid},"CHECKOUT-NEW"),/Invalid payment order/);
  for(const total of [-1,NaN,Infinity])assert.throws(()=>createAwaitingPayment({...original,total},"CHECKOUT-NEW"),/Invalid payment order/);
 });
