@@ -27,3 +27,13 @@ test("invalid quantities, missing items and totals fail closed",()=>{
  assert.throws(()=>encodeTicket({...paid,items:[{name:"P",qty:0}]}));
  assert.throws(()=>encodeTicket({...paid,total:NaN}));
 });
+
+test("Italian accented customer and ingredient text is encoded without replacement",()=>{
+ const ticket=encodeTicket({...paid,customer_name:"NICOLÒ",items:[{name:"PIADINA",qty:1,changes:"PIÙ FORMAGGIO"}],notes:"CITTÀ"});
+ assert.ok(ticket.includes(Buffer.from([0xe3])),"uppercase accented O");
+ assert.ok(ticket.includes(Buffer.from([0xeb])),"uppercase accented U");
+ assert.ok(ticket.includes(Buffer.from([0xb7])),"uppercase accented A");
+});
+test("unsupported glyphs fail closed before physical printing",()=>{
+ assert.throws(()=>encodeTicket({...paid,customer_name:"CLIENTE 😀"}),/Unsupported ticket characters/);
+});
