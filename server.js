@@ -154,10 +154,12 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    }catch(e){console.error("Sandbox claim simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
  }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/lifecycle-simulation"){
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
    try{return send(res,200,runPrintLifecycleSimulation())}
    catch(e){console.error("Lifecycle simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
  }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/print-simulation"){
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
    if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
    try {
      const reference="SIM-PRINT-"+crypto.randomBytes(12).toString("hex");
@@ -177,11 +179,13 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    }catch(e){console.error("Sandbox print simulation failed:",e.message);return send(res,503,{error:"Simulation failed"})}
  }
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/persistence-check"){
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
    if(!sandboxStore)return send(res,503,{databaseEnabled:false});
    try { const counts=await sandboxStore.counts();return send(res,200,{databaseEnabled:true,ordersStored:counts.total,verifiedPaidStored:counts.verified_paid,note:"Aggregate sandbox counts only; no customer data"}); }
    catch(e){console.error("Sandbox persistence check failed:",e.message);return send(res,503,{error:"Database unavailable"})}
  }
  if(MYPOS_SANDBOX&&req.method==="GET"&&u.pathname==="/api/mypos/diagnostics"){
+   if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
    return send(res,200,{staging:STAGING_DISABLE_BRIDGE,sandboxEnabled:MYPOS_SANDBOX,databaseEnabled:!!sandboxStore,notifications:{...MYPOSTEST_DIAG},note:"Counts since last server start only; no order or payment details exposed"});
  }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/notify"){try{
