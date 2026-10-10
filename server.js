@@ -2,6 +2,7 @@ const http=require("http"),fs=require("fs"),path=require("path"),crypto=require(
 const ORDERS_CLOSED=process.env.ORDERS_CLOSED==="true";
 const {validatePaymentNotification,parseNotification}=require("./lib/mypos-production-notify");
 const {buildLiveCheckout}=require("./lib/mypos-live-checkout");
+const {loadMyposConfigurationPackage}=require("./lib/mypos-config-package");
 const MYPosPackage=process.env.MYPOS_CONFIGURATION_PACKAGE||"";
 const USE_DATABASE=Boolean(process.env.DATABASE_URL);
 const productionDb=USE_DATABASE?require("./lib/production-orders-db"):null;
@@ -28,6 +29,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    if(ORDERS_CLOSED)return send(res,503,{error:"Ordina e Ritira temporaneamente chiuso"});
    if(!USE_DATABASE||!dbReady||!MYPosPackage)return send(res,503,{error:"Pagamento online non disponibile"});
    try{
+     loadMyposConfigurationPackage(MYPosPackage);
      const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);
      if(name.length<2||!validPhone(phone))return send(res,400,{error:"Nome o telefono non valido"});
      const pickupError=validatePickup(b.pickup_time);
