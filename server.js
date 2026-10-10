@@ -123,6 +123,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
    return send(res,201,{ok:true,order:{id,total,pickup_time:order.pickup_time},checkout});
  }catch(e){console.error("myPOS sandbox create failed:",e.message);return send(res,400,{error:"Impossibile preparare il pagamento di prova"})}}
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/recovery-check"){
+  if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
   if(!sandboxStore)return send(res,503,{error:"Sandbox database unavailable"});
   try{
     const id="SIM-REC-"+crypto.randomBytes(12).toString("hex");
@@ -135,6 +136,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
   }catch(e){console.error("Recovery check:",e.message);return send(res,503,{error:"Recovery check failed"});}
  }
  if(MYPOS_SANDBOX&&req.method==="POST"&&u.pathname==="/api/mypos/claim-simulation"){
+  if(!isAuthorizedLabRequest(req,process.env))return send(res,403,{error:"Forbidden"});
    if(!sandboxStore)return send(res,503,{error:"Database not enabled"});
    try {
      const reference="SIM-CLAIM-"+crypto.randomBytes(12).toString("hex");
