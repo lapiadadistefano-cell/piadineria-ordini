@@ -7,12 +7,20 @@
   <style>
     *{box-sizing:border-box}
     body{margin:0;background:#f5f5f1;color:#242424;font-family:Arial,Helvetica,sans-serif}
-    main{max-width:520px;margin:50px auto;padding:22px}
+    main{max-width:620px;margin:24px auto;padding:16px}
     .panel{background:white;border-radius:18px;padding:30px;box-shadow:0 8px 30px #00000012}
     h1{margin:0 0 6px;font-size:28px}p{line-height:1.5}
     .sub{color:#666;margin:0 0 28px}.status{background:#f0f0f0;border-radius:10px;padding:15px;margin:20px 0}
     button{width:100%;padding:17px;margin:8px 0;border:0;border-radius:12px;font-size:17px;font-weight:bold;color:white;cursor:pointer}
     .open{background:#237a3d}.close{background:#b63232}
+    button:disabled{opacity:.5;cursor:wait}
+    input{width:100%;padding:14px;font-size:16px;border:1px solid #bbb;border-radius:10px}
+    h2{font-size:23px;margin-top:32px}h3{font-size:17px;margin:24px 0 8px}
+    .product{padding:16px 0;border-bottom:1px solid #eee}
+    .product strong{display:block}.ingredients{font-size:14px;color:#666;line-height:1.4;margin:6px 0}
+    .availability{font-weight:bold;font-size:14px}.available{color:#237a3d}.unavailable{color:#b63232}
+    .product button{margin:10px 0 0;min-height:48px}
+    @media(max-width:420px){.panel{padding:20px}h1{font-size:24px}}
     .note{font-size:13px;color:#666;margin-top:20px}
   </style>
 </head>
@@ -24,6 +32,14 @@
     <p id="message" role="status" aria-live="polite"></p>
     <button class="open" type="button" id="open" disabled>APRI ORDINI</button>
     <button class="close" type="button" id="close" disabled>CHIUDI ORDINI</button>
+    <h2>Disponibilità menù</h2>
+    <p>Disattiva gli articoli esauriti e riattivali quando tornano disponibili. Restano disattivati finché li riattivi tu.</p>
+    <label for="search">Cerca un articolo o ingrediente</label>
+    <input id="search" type="search" placeholder="Es. rucola, Romagnola" autocomplete="off">
+    <p id="menuMessage" role="status" aria-live="polite">Caricamento menù...</p>
+    <div id="products"></div>
+    <button class="open" id="reloadMenu" type="button">Aggiorna elenco</button>
+    <p class="note">Gli ordini già ricevuti restano invariati.</p>
     <p class="note">Pannello riservato all’amministratore. Le modifiche si applicano al servizio collegato.</p>
   </section></main>
 <script>
@@ -38,5 +54,41 @@ async function change(closed){
  catch(e){msg.textContent=e.message;await refresh();}
 }
 open.addEventListener('click',()=>change(false));close.addEventListener('click',()=>change(true));refresh();
+const products=document.getElementById('products'),menuMsg=document.getElementById('menuMessage'),search=document.getElementById('search'),reloadMenu=document.getElementById('reloadMenu');
+let menuItems=[],menuBusy=false;
+function renderProducts(){
+ products.replaceChildren();
+ const query=search.value.trim().toLocaleLowerCase('it');
+ const filtered=menuItems.filter(item=>(item.name+' '+item.ingredients).toLocaleLowerCase('it').includes(query));
+ for(const cat of [...new Set(filtered.map(item=>item.cat))]){
+  const heading=document.createElement('h3');heading.textContent=cat;products.append(heading);
+  for(const item of filtered.filter(item=>item.cat===cat)){
+   const row=document.createElement('div');row.className='product';
+   const title=document.createElement('strong');title.textContent=item.name;
+   const ingredients=document.createElement('p');ingredients.className='ingredients';ingredients.textContent=item.ingredients;
+   const status=document.createElement('div');status.className='availability '+(item.available?'available':'unavailable');status.textContent=item.available?'Disponibile':'Esaurito';
+   const button=document.createElement('button');button.type='button';button.className=item.available?'close':'open';button.textContent=item.available?'Disattiva':'Riattiva';button.setAttribute('aria-label',button.textContent+' '+item.name);button.disabled=menuBusy;
+   button.addEventListener('click',()=>changeAvailability(item));row.append(title,ingredients,status,button);products.append(row);
+  }
+ }
+ if(!filtered.length){const empty=document.createElement('p');empty.textContent='Nessun articolo trovato.';products.append(empty);}
+}
+async function refreshMenu(){
+ if(menuBusy)return;menuBusy=true;reloadMenu.disabled=true;renderProducts();
+ try{const r=await fetch('/api/admin/menu',{cache:'no-store'});if(!r.ok)throw Error('Menù non disponibile. Premi Aggiorna elenco per riprovare.');menuItems=await r.json();menuMsg.textContent='Elenco aggiornato';}
+ catch(e){menuItems=[];menuMsg.textContent=e.message;}
+ finally{menuBusy=false;reloadMenu.disabled=false;renderProducts();}
+}
+async function changeAvailability(item){
+ if(menuBusy)return;menuBusy=true;reloadMenu.disabled=true;renderProducts();menuMsg.textContent='Salvataggio in corso...';
+ try{
+  const r=await fetch('/api/admin/menu',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Action':'change-availability'},body:JSON.stringify({name:item.name,available:!item.available})});
+  const result=await r.json();if(!r.ok)throw Error(result.error||'Modifica non salvata. Riprova.');
+  item.available=result.available;menuMsg.textContent=item.name+(item.available?' riattivata.':' disattivata.');
+ }catch(e){menuItems=[];menuMsg.textContent=e.message+' Premi Aggiorna elenco per verificare lo stato.';}
+ finally{menuBusy=false;reloadMenu.disabled=false;renderProducts();}
+}
+search.addEventListener('input',renderProducts);reloadMenu.addEventListener('click',refreshMenu);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshMenu();});refreshMenu();
 </script></body>
 </html>

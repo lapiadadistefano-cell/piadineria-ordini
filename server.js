@@ -32,6 +32,20 @@ function validatePickup(s){const r=romeParts(),pm=pickupMinutes(s);if(r.weekday=
 function cleanText(v,max){return String(v||"").replace(/[\u0000-\u001F\u007F]/g," ").replace(/\s+/g," ").trim().slice(0,max)}
 function validPhone(v){const digits=String(v||"").replace(/\D/g,"");return digits.length>=6&&digits.length<=15}
 function officialItems(items){if(!Array.isArray(items)||!items.length||items.length>30)throw Error("Ordine non valido");const menu=readMenu();return items.map(x=>{const q=Number(x.qty);if(!Number.isInteger(q)||q<1||q>20)throw Error("Quantità non valida");const name=cleanText(x.name,80),product=menu.find(m=>m.name===name);if(!product)throw Error(`Prodotto non valido: ${name||"senza nome"}`);return{qty:q,name:product.name,ingredients:product.ingredients,changes:cleanText(x.changes,200),price:Number(product.price)}})}
+async function availableMenu(client) {
+  if (!adminReady) throw Object.assign(Error("Disponibilità menù non verificabile. Riprova tra poco."), {status:503});
+  try {
+    const disabled = await adminControl.getMenuAvailability(client);
+    return readMenu().map(item => ({...item, available:!disabled.has(item.name)}));
+  } catch (error) {
+    throw Object.assign(Error("Disponibilità menù non verificabile. Riprova tra poco."), {status:503});
+  }
+}
+async function checkAvailability(items, client) {
+  const menu = await availableMenu(client);
+  const unavailable = items.filter(item => !menu.some(product => product.name === item.name && product.available));
+  if (unavailable.length) throw Object.assign(Error(`Articolo esaurito: ${unavailable.map(item => item.name).join(", ")}. Rimuovilo dal carrello per proseguire.`), {status:409});
+}
 function fingerprint(b,items,rp){return crypto.createHash("sha256").update(JSON.stringify({d:rp.date,n:cleanText(b.customer_name,80).toLowerCase(),p:String(b.phone).replace(/\D/g,""),t:b.pickup_time,i:items.map(x=>[x.name,x.qty,x.changes])})).digest("hex")}
 const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://${req.headers.host}`);
  if(u.pathname==="/admin.html"||u.pathname.startsWith("/api/admin/")){
@@ -44,11 +58,33 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      if(!adminReady)return send(res,503,{error:"Gestione non disponibile"});
      try{const b=await jsonBody(req);if(typeof b.closed!=="boolean")return send(res,400,{error:"Valore non valido"});await adminControl.setOrdersClosed(b.closed);return send(res,200,{closed:await ordersClosed()},{"Cache-Control":"no-store"})}catch{return send(res,503,{error:"Impossibile salvare lo stato"})}
    }
+   if(u.pathname==="/api/admin/menu" && req.method==="GET") {
+     try { return send(res,200,await availableMenu(),{"Cache-Control":"no-store"}); }
+     catch(error) { return send(res,503,{error:error.message},{"Cache-Control":"no-store"}); }
+   }
+   if(u.pathname==="/api/admin/menu" && req.method==="POST") {
+     if(req.headers["x-admin-action"]!=="change-availability")return send(res,403,{error:"Richiesta non autorizzata"});
+     const host=req.headers["x-forwarded-host"]||req.headers.host;
+     let originHost;try{originHost=new URL(req.headers.origin).host}catch{return send(res,403,{error:"Origine non valida"})}
+     if(!host||originHost!==host)return send(res,403,{error:"Origine non autorizzata"});
+     if(!adminReady)return send(res,503,{error:"Gestione non disponibile"});
+     let body;try{body=await jsonBody(req)}catch{return send(res,400,{error:"Richiesta non valida"})}
+     if(typeof body.available!=="boolean"||typeof body.name!=="string"||!readMenu().some(item=>item.name===body.name))
+       return send(res,400,{error:"Articolo o disponibilità non validi"});
+     try {
+       await adminControl.setMenuAvailability(body.name,body.available);
+       return send(res,200,{name:body.name,available:body.available},{"Cache-Control":"no-store"});
+     } catch { return send(res,503,{error:"Modifica non salvata. Riprova."}); }
+   }
    if(u.pathname.startsWith("/api/admin/"))return send(res,404,{error:"Non trovato"});
  }
 
+ if(req.method==="GET"&&(u.pathname==="/api/menu"||u.pathname==="/menu.json")) {
+   try {return send(res,200,(await availableMenu()).filter(item=>item.available),{"Cache-Control":"no-store"});}
+   catch(error){return send(res,503,{error:error.message},{"Cache-Control":"no-store"});}
+ }
  if(await ordersClosed()&&req.method==="POST"&&u.pathname==="/api/orders")return send(res,503,{error:"Ordina e Ritira è temporaneamente chiuso per oggi. Riprova alla prossima apertura."});
- if(req.method==="POST"&&u.pathname==="/api/orders"){try{const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);if(name.length<2)return send(res,400,{error:"Inserisci un nome valido"});if(!validPhone(phone))return send(res,400,{error:"Inserisci un numero di telefono valido"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items)}catch(e){return send(res,400,{error:e.message})}const now=new Date(),rp=romeParts(now),fp=fingerprint(b,items,rp),total=items.reduce((s,x)=>s+x.price*x.qty,0),makeOrder=orders=>({id:nextId(orders),pickup_time:b.pickup_time,customer_name:name,phone,items,notes:cleanText(b.notes,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",payment_method:"cash",payment_status:"unpaid",payment_verified:false,fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")});if(USE_DATABASE){if(!dbReady)return send(res,503,{error:"Archivio ordini non disponibile"});const result=await productionDb.createOrder(makeOrder,fp);return send(res,result.duplicate?200:201,{ok:true,duplicate:result.duplicate,order:result.order})}const orders=readOrders(),duplicate=orders.find(o=>o.fingerprint===fp&&Date.now()-new Date(o.created_at).getTime()<120000);if(duplicate)return send(res,200,{ok:true,duplicate:true,order:duplicate});const order=makeOrder(orders);orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,400,{error:e.message==="too_big"?"Ordine troppo grande":"Richiesta non valida"})}}
+ if(req.method==="POST"&&u.pathname==="/api/orders"){try{const b=await jsonBody(req),name=cleanText(b.customer_name,80),phone=cleanText(b.phone,40);if(name.length<2)return send(res,400,{error:"Inserisci un nome valido"});if(!validPhone(phone))return send(res,400,{error:"Inserisci un numero di telefono valido"});const pickupError=validatePickup(b.pickup_time);if(pickupError)return send(res,400,{error:pickupError});let items;try{items=officialItems(b.items);await checkAvailability(items)}catch(e){return send(res,e.status||400,{error:e.message})}const now=new Date(),rp=romeParts(now),fp=fingerprint(b,items,rp),total=items.reduce((s,x)=>s+x.price*x.qty,0),makeOrder=orders=>({id:nextId(orders),pickup_time:b.pickup_time,customer_name:name,phone,items,notes:cleanText(b.notes,300),total:Number(total.toFixed(2)),received_at:rp.time,local_date:rp.date,created_at:now.toISOString(),status:"pending",payment_method:"cash",payment_status:"unpaid",payment_verified:false,fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")});if(USE_DATABASE){if(!dbReady)return send(res,503,{error:"Archivio ordini non disponibile"});const result=await productionDb.createOrder(makeOrder,fp,client=>checkAvailability(items,client));return send(res,result.duplicate?200:201,{ok:true,duplicate:result.duplicate,order:result.order})}const orders=readOrders(),duplicate=orders.find(o=>o.fingerprint===fp&&Date.now()-new Date(o.created_at).getTime()<120000);if(duplicate)return send(res,200,{ok:true,duplicate:true,order:duplicate});const order=makeOrder(orders);orders.push(order);writeOrders(orders);return send(res,201,{ok:true,order})}catch(e){return send(res,e.status||400,{error:e.status?e.message:e.message==="too_big"?"Ordine troppo grande":"Richiesta non valida"})}}
  if((req.method==="GET"||req.method==="POST")&&(u.pathname==="/mypos/return"||u.pathname==="/mypos/cancel")){
    const cancelled=u.pathname==="/mypos/cancel";
    const heading=cancelled?"Pagamento annullato":"Rientro dal pagamento";
@@ -66,7 +102,9 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
      if(name.length<2||!validPhone(phone))return send(res,400,{error:"Nome o telefono non valido"});
      const pickupError=validatePickup(b.pickup_time);
      if(pickupError)return send(res,400,{error:pickupError});
-     const items=officialItems(b.items),now=new Date(),rp=romeParts(now);
+     const items=officialItems(b.items);
+     await checkAvailability(items);
+     const now=new Date(),rp=romeParts(now);
      const fp=crypto.createHash("sha256").update("mypos:"+fingerprint(b,items,rp)).digest("hex");
      const total=Number(items.reduce((sum,item)=>sum+item.price*item.qty,0).toFixed(2));
      const makeOrder=orders=>{
@@ -77,7 +115,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
          payment_status:"awaiting",payment_verified:false,payment_reference:id,
          fingerprint:fp,print_token:crypto.randomBytes(12).toString("hex")};
      };
-     const created=await productionDb.createOrder(makeOrder,fp);
+     const created=await productionDb.createOrder(makeOrder,fp,client=>checkAvailability(items,client));
      if(created.order.payment_method!=="mypos"||created.order.payment_status!=="awaiting")
        return send(res,409,{error:"Ordine già presente con diversa modalità di pagamento"});
      const checkout=buildLiveCheckout(created.order,process.env.MYPOS_PUBLIC_ORIGIN||"https://la-piada-di-stefano-ordini.onrender.com",MYPosPackage);
@@ -85,7 +123,7 @@ const server=http.createServer(async(req,res)=>{const u=new URL(req.url,`http://
        order:{id:created.order.id,total:created.order.total,pickup_time:created.order.pickup_time},checkout},{"Cache-Control":"no-store"});
    }catch(e){
      console.error("myPOS checkout creation failed:",e.message);
-     return send(res,400,{error:"Impossibile avviare il pagamento"});
+     return send(res,e.status||400,{error:e.status?e.message:"Impossibile avviare il pagamento"});
    }
  }
  if(req.method==="POST"&&u.pathname==="/api/mypos/notify"){
