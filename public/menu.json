@@ -226,5 +226,29 @@
     "price": 8,
     "name": "CAVOLOTTO",
     "ingredients": "Cotto, Squacquerone, Cavolo"
+  },
+  {
+    "cat": "Piadine Baby",
+    "price": 3,
+    "name": "PROSCIUTTO E SQUACQUERONE",
+    "ingredients": "Prosciutto cotto, Squacquerone"
+  },
+  {
+    "cat": "Piadine Baby",
+    "price": 3,
+    "name": "SALAME E MOZZARELLA",
+    "ingredients": "Salame, Mozzarella"
+  },
+  {
+    "cat": "Piadine Baby",
+    "price": 3,
+    "name": "TACCHINO E SQUACQUERONE",
+    "ingredients": "Tacchino, Squacquerone"
+  },
+  {
+    "cat": "Piadine Baby",
+    "price": 3,
+    "name": "NUTELLA",
+    "ingredients": "Nutella"
   }
 ]
