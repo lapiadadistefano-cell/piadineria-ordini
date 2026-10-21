@@ -168,6 +168,12 @@
     "ingredients": "Polpette di manzo, Squacquerone, Grana a scaglie, Rucola, Crema ai carciofi"
   },
   {
+    "cat": "Piadine Speciali",
+    "price": 8,
+    "name": "SUPER VEGGIE",
+    "ingredients": "Philadelphia Vegan, Melanzane, Insalata di cavolo, Crema di zucca, Maionese vegana"
+  },
+  {
     "cat": "Rotolini",
     "price": 8,
     "name": "CLASSICO",
