@@ -256,5 +256,29 @@
     "price": 3,
     "name": "NUTELLA BABY",
     "ingredients": "Nutella"
+  },
+  {
+    "cat": "Piadine Dolci",
+    "price": 4,
+    "name": "NUTELLA E COCCO",
+    "ingredients": "Nutella, Cocco rapè"
+  },
+  {
+    "cat": "Piadine Dolci",
+    "price": 4,
+    "name": "NUTELLA E MANDORLE",
+    "ingredients": "Nutella, Mandorle tritate"
+  },
+  {
+    "cat": "Piadine Dolci",
+    "price": 4,
+    "name": "NUTELLA E NOCCIOLE",
+    "ingredients": "Nutella, Nocciole tritate"
+  },
+  {
+    "cat": "Piadine Dolci",
+    "price": 4,
+    "name": "NUTELLA E ZUCCHERINI",
+    "ingredients": "Nutella, Zuccherini colorati"
   }
 ]
