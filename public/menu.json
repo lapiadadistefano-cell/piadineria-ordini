@@ -27,13 +27,13 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "SFIZIOSA",
-    "ingredients": "Crema salmone, Mozzarella, Patè, Salsa Tartara"
+    "ingredients": "Crema Salmone, Mozzarella, Patè, Salsa Tartara"
   },
   {
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "MAIALOSA",
-    "ingredients": "Cotto, Grana, Rucola, Salsa Red Hot"
+    "ingredients": "Speck, Grana, Rucola, Salsa Red Hot"
   },
   {
     "cat": "Piadine Classiche",
@@ -81,7 +81,7 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "GUSTOSA",
-    "ingredients": "Crema salmone, Squacquerone, Lattuga, Patè"
+    "ingredients": "Crema Salmone, Squacquerone, Lattuga, Patè"
   },
   {
     "cat": "Piadine Classiche",
