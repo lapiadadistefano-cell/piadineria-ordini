@@ -259,25 +259,31 @@
   },
   {
     "cat": "Piadine Dolci",
-    "price": 4,
+    "price": 5,
     "name": "NUTELLA E COCCO",
     "ingredients": "Nutella, Cocco rapè"
   },
   {
     "cat": "Piadine Dolci",
-    "price": 4,
+    "price": 5,
     "name": "NUTELLA E MANDORLE",
     "ingredients": "Nutella, Mandorle tritate"
   },
   {
     "cat": "Piadine Dolci",
-    "price": 4,
+    "price": 5,
     "name": "NUTELLA E NOCCIOLE",
     "ingredients": "Nutella, Nocciole tritate"
   },
   {
     "cat": "Piadine Dolci",
-    "price": 7,
+    "price": 5,
+    "name": "NUTELLA E MASCARPONE",
+    "ingredients": "Nutella, Mascarpone"
+  },
+  {
+    "cat": "Piadine Dolci",
+    "price": 6,
     "name": "NUTELLOSA CRUNCH",
     "ingredients": "Nutella, Mascarpone, Wafer alla vaniglia sbriciolato, Granella di nocciole"
   }
