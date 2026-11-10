@@ -15,19 +15,19 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "LOCALE",
-    "ingredients": "Padano, Grana, Lattuga, Funghi"
+    "ingredients": "Salame Padano, Grana, Lattuga, Funghi"
   },
   {
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "PICCANTINA",
-    "ingredients": "Piccante, Robiola, Cetrioli, Salsa Tartara"
+    "ingredients": "Salame Piccante, Robiola, Cetrioli, Salsa Tartara"
   },
   {
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "SFIZIOSA",
-    "ingredients": "Crema Salmone, Mozzarella, Patè, Salsa Tartara"
+    "ingredients": "Crema di Salmone, Mozzarella, Patè di Olive, Salsa Tartara"
   },
   {
     "cat": "Piadine Classiche",
@@ -45,7 +45,7 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "DIAVOLINA",
-    "ingredients": "Piccante, Gorgonzola, Patè, Lattuga"
+    "ingredients": "Salame Piccante, Gorgonzola, Patè di Olive, Lattuga"
   },
   {
     "cat": "Piadine Classiche",
@@ -57,7 +57,7 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "PADANA",
-    "ingredients": "Padano, Robiola, Patè, Funghi"
+    "ingredients": "Salame Padano, Robiola, Patè di Olive, Funghi"
   },
   {
     "cat": "Piadine Classiche",
@@ -81,7 +81,7 @@
     "cat": "Piadine Classiche",
     "price": 7,
     "name": "GUSTOSA",
-    "ingredients": "Crema Salmone, Squacquerone, Lattuga, Patè"
+    "ingredients": "Crema di Salmone, Squacquerone, Lattuga, Patè di Olive"
   },
   {
     "cat": "Piadine Classiche",
@@ -93,25 +93,25 @@
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "VIOLA",
-    "ingredients": "Squacquerone, Grigliate, Radicchio"
+    "ingredients": "Squacquerone, Verdure Grigliate, Crema di Radicchio"
   },
   {
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "CARCIOFA",
-    "ingredients": "Robiola, Zucchine, Funghi, Carciofi"
+    "ingredients": "Robiola, Zucchine Grigliate, Funghi, Crema di Carciofi"
   },
   {
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "ZUMBA",
-    "ingredients": "Zucchine, Bufala, Basilico, Pomodori"
+    "ingredients": "Zucchine Grigliate, Bufala, Basilico, Pomodorini"
   },
   {
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "ORTICELLO",
-    "ingredients": "Mozzarella, Cavolo, Melanzane, Cetrioli"
+    "ingredients": "Mozzarella, Insalata di Cavolo, Melanzane Grigliate, Cetrioli"
   },
   {
     "cat": "Piadine Veggie",
@@ -123,7 +123,7 @@
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "VEGA",
-    "ingredients": "Grigliate, Patè, Cetrioli, Rucola"
+    "ingredients": "Verdure Grigliate, Patè di Olive, Cetrioli, Rucola"
   },
   {
     "cat": "Piadine Veggie",
@@ -141,7 +141,7 @@
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "MEDITERRANEA",
-    "ingredients": "Radicchio, Grigliate, Pomodori, Basilico"
+    "ingredients": "Crema di Radicchio, Verdure Grigliate, Pomodorini, Basilico"
   },
   {
     "cat": "Piadine Speciali",
@@ -189,13 +189,13 @@
     "cat": "Rotolini",
     "price": 8,
     "name": "PICCANTOSO",
-    "ingredients": "Piccante, Squacquerone, Funghi"
+    "ingredients": "Salame Piccante, Squacquerone, Funghi"
   },
   {
     "cat": "Rotolini",
     "price": 8,
     "name": "RUSTICHELLO",
-    "ingredients": "Padano, Robiola, Salsa Boscaiola"
+    "ingredients": "Salame Padano, Robiola, Salsa Boscaiola"
   },
   {
     "cat": "Rotolini",
@@ -207,7 +207,7 @@
     "cat": "Rotolini",
     "price": 8,
     "name": "FIORENTINO",
-    "ingredients": "Finocchiona, Squacquerone, Cavolo"
+    "ingredients": "Finocchiona, Squacquerone, Insalata di Cavolo"
   },
   {
     "cat": "Rotolini",
@@ -219,19 +219,19 @@
     "cat": "Rotolini",
     "price": 8,
     "name": "SAPORITO",
-    "ingredients": "Padano, Robiola, Salsa Tartara"
+    "ingredients": "Salame Padano, Robiola, Salsa Tartara"
   },
   {
     "cat": "Rotolini",
     "price": 8,
     "name": "T.N.T.",
-    "ingredients": "Piccante, Gorgonzola, Salsa Red Hot"
+    "ingredients": "Salame Piccante, Gorgonzola, Salsa Red Hot"
   },
   {
     "cat": "Rotolini",
     "price": 8,
     "name": "CAVOLOTTO",
-    "ingredients": "Cotto, Squacquerone, Cavolo"
+    "ingredients": "Cotto, Squacquerone, Insalata di Cavolo"
   },
   {
     "cat": "Piadine Baby",
