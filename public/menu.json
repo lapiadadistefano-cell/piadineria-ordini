@@ -117,7 +117,7 @@
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "CAVOLONA",
-    "ingredients": "Phila vegan, Cavolo, Zucca, Pomodori"
+    "ingredients": "Grana, Melanzane Grigliate, Crema di Zucca, Insalata di Cavolo"
   },
   {
     "cat": "Piadine Veggie",
@@ -129,13 +129,13 @@
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "ISABELLA",
-    "ingredients": "Phila vegan, Zucchine, Funghi, Carciofi"
+    "ingredients": "Patè di Olive, Zucchine Grigliate, Funghi, Crema di Carciofi"
   },
   {
     "cat": "Piadine Veggie",
     "price": 7,
     "name": "VEGGY",
-    "ingredients": "Phila vegan, Melanzane, Pomodori, Cavolo"
+    "ingredients": "Melanzane Grigliate, Pomodorini, Insalata di Cavolo, Crema di Zucca"
   },
   {
     "cat": "Piadine Veggie",
@@ -170,8 +170,8 @@
   {
     "cat": "Piadine Speciali",
     "price": 8,
-    "name": "SUPER VEGGIE",
-    "ingredients": "Philadelphia Vegan, Melanzane, Insalata di cavolo, Crema di zucca, Maionese vegana"
+    "name": "ZUCCOSA",
+    "ingredients": "Speck a Cubetti, Gorgonzola, Crema di Zucca, Rucola"
   },
   {
     "cat": "Rotolini",
