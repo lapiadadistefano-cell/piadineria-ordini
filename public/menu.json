@@ -236,8 +236,8 @@
   {
     "cat": "Piadine Baby",
     "price": 3,
-    "name": "PROSCIUTTO E SQUACQUERONE",
-    "ingredients": "Prosciutto cotto, Squacquerone"
+    "name": "COTTO E FORMAGGIO",
+    "ingredients": "Prosciutto Cotto, Formaggio"
   },
   {
     "cat": "Piadine Baby",
@@ -248,8 +248,8 @@
   {
     "cat": "Piadine Baby",
     "price": 3,
-    "name": "TACCHINO E SQUACQUERONE",
-    "ingredients": "Tacchino, Squacquerone"
+    "name": "TACCHINO E FORMAGGIO",
+    "ingredients": "Tacchino, Formaggio"
   },
   {
     "cat": "Piadine Baby",
