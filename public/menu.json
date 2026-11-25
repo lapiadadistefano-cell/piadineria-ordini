@@ -260,26 +260,20 @@
   {
     "cat": "Piadine Dolci",
     "price": 5,
-    "name": "NUTELLA E COCCO",
-    "ingredients": "Nutella, Cocco rapè"
+    "name": "NUTELLA",
+    "ingredients": "Nutella"
   },
   {
     "cat": "Piadine Dolci",
     "price": 5,
-    "name": "NUTELLA E MANDORLE",
-    "ingredients": "Nutella, Mandorle tritate"
+    "name": "LOTUS BISCOFF",
+    "ingredients": "Crema Lotus Biscoff"
   },
   {
     "cat": "Piadine Dolci",
     "price": 5,
-    "name": "NUTELLA E NOCCIOLE",
-    "ingredients": "Nutella, Nocciole tritate"
-  },
-  {
-    "cat": "Piadine Dolci",
-    "price": 5,
-    "name": "NUTELLA E MASCARPONE",
-    "ingredients": "Nutella, Mascarpone"
+    "name": "PISTACCHIOSA",
+    "ingredients": "Crema al Pistacchio"
   },
   {
     "cat": "Piadine Dolci",
